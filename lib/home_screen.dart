@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dots_indicator/dots_indicator.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -25,29 +26,76 @@ class _HomeScreenState extends State<HomeScreen> {
                   // Header with location, profile, and notifications
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 15.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space out children evenly
                           children: [
-                            Icon(Icons.location_on, color: Colors.orange),
-                            SizedBox(width: 8.0),
-                            Text(
-                              "Home",
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
+                            // Left Section: Location
+                            Row(
+                              children: [
+                                Icon(Icons.location_on, color: Colors.orange),
+                                SizedBox(width: 8.0),
+                                Text(
+                                  "Home",
+                                  style: TextStyle(
+                                    fontFamily: "cerapro",
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16.0,
+                                  ),
+                                ),
+                                SizedBox(width: 4.0), // Space between text and arrow
+                                Icon(Icons.keyboard_arrow_down, size: 20.0, color: Colors.grey),
+                              ],
+                            ),
+
+                            // Right Section: Profile and Notification Icons
+                            Row(
+                              children: [
+                                 // Added padding of 5
+                                  IconButton(
+                                    onPressed: () {
+                                      print("Profile icon tapped");
+                                    },
+                                    icon: SvgPicture.asset(
+                                      'assets/images/profile_icon.svg',
+                                      width: 28.0,
+                                      height: 28.0,
+                                    ),
+                                  ),
+
+                                SizedBox(width: 0.0), // This is not necessary as it won't add any space
+                                IconButton(
+                                  onPressed: () {
+                                    print("Notification icon tapped");
+                                  },
+                                  icon: Icon(
+                                    Icons.notifications_outlined,
+                                    size: 28.0,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        Row(
-                          children: [
-                            Icon(Icons.person_outline, size: 28.0),
-                            SizedBox(width: 16.0),
-                            Icon(Icons.notifications_outlined, size: 28.0),
-                          ],
+                        SizedBox(height: 4.0), // Add spacing between the first and second rows
+                        Padding(
+                          padding: const EdgeInsets.only(left: 5.0),
+                          child: Text(
+                            "A 12, mansi building, river park, ash...",
+                            style: TextStyle(
+                              fontFamily: "cerapro",
+                              fontSize: 12.0,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
                         ),
                       ],
                     ),
                   ),
+
 
                   // Carousel with Dots Indicator
                   Padding(
@@ -67,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         },
                       ),
                       items: [
-                        'assets/images/sponsor_banner1.png',
+                        'assets/images/sponsor_banner1.jpg',
                         'assets/images/sponsor_banner2.png',
                         'assets/images/sponsor_banner3.png',
                         'assets/images/sponsor_banner4.png',
@@ -80,8 +128,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               width: MediaQuery.of(context).size.width * 2,
                               margin: EdgeInsets.symmetric(horizontal: 0.0),
                               decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(10.0),
+                                borderRadius: BorderRadius.circular(1.0),
+                                border: Border.all(
+                                  color: Colors.grey.shade400,  // Border color
+                                  width: 1.5,  // Border width (2px)
+                                ),
                               ),
                               child: Image.asset(imagePath, fit: BoxFit.cover), // Display the image
                             );
@@ -111,7 +162,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   // Food Donation Section
-                  // Food Donation Section
                   Padding(
                     padding: const EdgeInsets.only(top: 40.0, bottom: 20.0, left: 0.0, right: 0.0), // Padding for the entire section
                     child: Stack(
@@ -121,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(10.0),
                             child: Image.asset(
-                              'assets/images/sponsor_banner2.png', // Path to your food_donation image
+                              'assets/images/food_donation_background.png', // Path to your food_donation image
                               fit: BoxFit.cover, // Ensure the image covers the whole container
                             ),
                           ),
@@ -132,101 +182,107 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             // "Food Donation" Text
                             Padding(
-                              padding: const EdgeInsets.only(left: 18.0,top:5.0),
+                              padding: const EdgeInsets.only(left: 18.0,top:16.0),
                               child: Text(
                                 "Food Donation",
                                 style: TextStyle(
-                                  color: Colors.grey.shade800, // Text color for visibility
-                                  fontSize: 17.0, // Font size for the text
+                                  color: Colors.grey.shade700, // Text color for visibility
+                                  fontSize: 14.0, // Font size for the text
                                   fontWeight: FontWeight.bold, // Bold font
                                 ),
                               ),
                             ),
                             SizedBox(height: 16.0), // Space between text and next section
                             // Rectangle Section
-                        Transform.translate(
-                          offset: Offset(0, -15),
-                            child: Container(
-                              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 10.0),
-                              height: 249.0, // Set a fixed height for the rectangle
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10.0), // Rounded corners
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10.0),
-                                child: Stack(
-                                  children: [
-                                    // Full-Width and Full-Height Image
+                            Transform.translate(
+                              offset: Offset(0, -6),
+                              child: Container(
+                                padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 10.0),
+                                height: 249.0, // Set a fixed height for the rectangle
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10.0), // Rounded corners
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(10.0),
+                                  child: Stack(
+                                    children: [
+                                      // Full-Width and Full-Height Image
 
-                                    Positioned.fill(
-                                      child: Image.asset(
-                                        'assets/images/food_donation.png', // Path to your inner rectangle image
-                                        fit: BoxFit.cover, // Ensure the image covers the entire rectangle
+                                      Positioned.fill(
+                                        child: SvgPicture.asset(
+                                          'assets/images/food_donation.svg',
+                                          fit: BoxFit.contain,  // Ensures the entire image is visible
+                                        ),
                                       ),
-                                    ),
-                                    // Overlay Content
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16), // General padding for the entire rectangle
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          // Description with separate paddings
+                                      // Overlay Content
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16), // General padding for the entire rectangle
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            // Description with separate paddings
 
-                                          Padding(
-                                            padding: const EdgeInsets.only(right: 160.0), // Right padding for "Give food, Give hope"
+                                            Padding(
+                                              padding: const EdgeInsets.only(right: 160.0,top: 4), // Right padding for "Give food, Give hope"
 
-                                            child: Text(
-                                              "Give food, Give hope",
-                                              style: TextStyle(
-                                                fontFamily: "Inter",
-                                                fontSize: 18.0,
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.grey.shade800, // Text color
-                                              ),
-                                            ),
-                                          ),
-
-                                          SizedBox(height: 8.0), // Spacing
-                                          Padding(
-                                            padding: const EdgeInsets.only(right: 140.0), // Right padding for "A simple act of kindness..."
-                                            child: Text(
-                                              "A simple act of kindness can change lives",
-                                              style: TextStyle(
-                                                fontFamily: "Inter",
-                                                fontSize: 14.0,
-                                                color: Colors.grey.shade600, // Text color
-                                              ),
-                                            ),
-                                          ),
-                                          Spacer(), // Push the button to the bottom
-                                          SizedBox(
-                                            height: 45,
-                                            width: double.infinity, // Set the button to stretch full width of rectangle
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                // Implement your button action here
-                                              },
-                                              child: Text("START DONATING TODAY",
-                                                style: TextStyle(fontFamily: "Inter",fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                foregroundColor: Colors.white, // Text color
-                                                backgroundColor: Colors.orange, // Button background color
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius: BorderRadius.circular(10.0),
+                                              child: Text(
+                                                "Give food, Give hope",
+                                                style: TextStyle(
+                                                  fontFamily: "cerapro",
+                                                  fontSize: 18.0,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.grey.shade800, // Text color
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                        ],
+
+                                            SizedBox(height: 8.0), // Spacing
+                                            Padding(
+                                              padding: const EdgeInsets.only(right: 140.0), // Right padding for "A simple act of kindness..."
+                                              child: Text(
+                                                "A simple act of kindness can change lives",
+                                                style: TextStyle(
+                                                  fontFamily: "cerapro",
+                                                  fontSize: 13.0,
+                                                  color: Colors.grey.shade600, // Text color
+                                                ),
+                                              ),
+                                            ),
+                                            Spacer(), // Push the button to the bottom
+                                            Padding(
+                                              padding: const EdgeInsets.only(bottom: 12.0), // Add bottom padding here
+                                              child: SizedBox(
+                                                height: 45,
+                                                width: double.infinity, // Set the button to stretch full width of rectangle
+                                                child: ElevatedButton(
+                                                  onPressed: () {
+                                                    // Implement your button action here
+                                                  },
+                                                  child: Text(
+                                                    "START DONATING TODAY              >",
+                                                    style: TextStyle(
+                                                      fontFamily: "cerapro",
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  style: ElevatedButton.styleFrom(
+                                                    foregroundColor: Colors.white, // Text color
+                                                    backgroundColor: Colors.orange, // Button background color
+                                                    shape: RoundedRectangleBorder(
+                                                      borderRadius: BorderRadius.circular(10.0),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                        ),
                           ],
                         ),
                       ],
@@ -235,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Be BeOne Verified Section
                   Padding(
-                    padding: const EdgeInsets.only(left:16,right: 16,top:14,bottom: 18),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 14, bottom: 18),
                     child: ElevatedButton(
                       onPressed: () {
                         // Implement your button action here
@@ -243,18 +299,23 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.zero, // Remove padding to make the image occupy full space
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
+                          borderRadius: BorderRadius.circular(13.50),
                         ),
                       ),
                       child: Container(
                         height: 70.0, // Set the desired height for the button
                         width: double.infinity, // Make the width of the button stretch to full width
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
+                          borderRadius: BorderRadius.circular(13.50),
+                          color: Colors.grey[500],
+                          border: Border.all(
+                            color: Colors.grey, // Border color
+                            width: 0.0, // Thickness of the border
+                          ),
                         ),
-                        child: Image.asset(
-                          'assets/images/verified_icon.png', // Path to your image
-                          fit: BoxFit.cover, // Ensure the image covers the whole button
+                        child: SvgPicture.asset(
+                          'assets/images/verified_icon.svg',
+                          fit: BoxFit.contain,  // Ensures the entire image is visible
                         ),
                       ),
                     ),
@@ -262,21 +323,39 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Highest Donors Section
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0,vertical: 3.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 3.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text("Highest donors", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0 , color: Colors.grey.shade700)),
-                            TextButton(onPressed: () {}, child: Text("Explore all >")),
+                            Text(
+                              "Highest donors",
+                              style: TextStyle(
+                                fontFamily: "cerapro",
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14.0,
+                                color: Colors.grey.shade700,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {},
+                              child: Text(
+                                "Explore all >",
+                                style: TextStyle(
+                                  fontSize: 12.0,
+                                  fontFamily: 'cerapro',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                         SizedBox(
-                          height: 180.0,
+                          height: 160.0,
                           child: PageView.builder(
-                            controller: PageController(viewportFraction: 10), // To show 3 cards at once
+                            controller: PageController(viewportFraction: 1.04), // Show multiple cards partially
                             itemCount: 10,
                             onPageChanged: (index) {
                               setState(() {
@@ -290,59 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     _donorsIndex = index; // Update the index when an item is tapped
                                   });
                                 },
-                                child: Container(
-                                  width: 150.0,
-                                  padding: EdgeInsets.only(
-                                    right: 16.0,
-                                    top:16,
-                                     left: 16
-                                     // Add left padding only for the first card
-                                  ),
-                                  margin: EdgeInsets.only(right: 11.0),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(10.0),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.grey.withOpacity(0.2),
-                                        spreadRadius: 2,
-                                        blurRadius: 5,
-                                        offset: Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 24.0,
-                                        backgroundColor: Colors.lightBlueAccent,
-                                        child: Icon(
-                                          Icons.account_circle,
-                                          size: 24.0,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      SizedBox(height: 8.0),
-                                      Text(
-                                        "SOHAM DALVI",
-                                        style: TextStyle(fontSize: 10.0, fontWeight: FontWeight.bold),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      SizedBox(height: 3.0),
-                                      Text(
-                                        "Feed 10 HungryOnes",
-                                        style: TextStyle(fontSize: 11.0),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                      SizedBox(height: 3.0),
-                                      Text(
-                                        "In 5 Donations",
-                                        style: TextStyle(fontSize: 10.0),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                                child: DonationCard(), // Use the new DonationCard widget
                               );
                             },
                           ),
@@ -411,22 +438,22 @@ class _HomeScreenState extends State<HomeScreen> {
                         Transform.translate(
                           offset: Offset(0, -1),
                           child:IconButton(
-                          icon: Icon(Icons.store, color: Colors.grey),
-                          onPressed: () {
-                            // Navigate to Organic Store
-                          },
-                        ),
+                            icon: Icon(Icons.store, color: Colors.grey),
+                            onPressed: () {
+                              // Navigate to Organic Store
+                            },
+                          ),
                         ),
 
                         Padding(
                           padding: const EdgeInsets.only(bottom: 3.0),
                           child: Transform.translate(
                             offset: Offset(0, -5),
-                        child:Text(
-                          "Organic Store",
-                          style: TextStyle(fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
-                        ),
-                        ),
+                            child:Text(
+                              "Organic Store",
+                              style: TextStyle(fontFamily:"cerapro",fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -456,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   offset: Offset(0, -5),
                                   child: Text(
                                     "Home",
-                                    style: TextStyle(fontSize: 10.0, color: Colors.grey, fontWeight: FontWeight.w500),
+                                    style: TextStyle(fontFamily:"cerapro",fontSize: 10.0, color: Colors.orange, fontWeight: FontWeight.w700),
                                   ),
                                 ),
                               ),
@@ -483,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             offset: Offset(0, -5),
                             child:Text(
                               "My Donation",
-                              style: TextStyle(fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                              style: TextStyle(fontFamily:"cerapro",fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
                             ),
                           ),
                         ),
@@ -497,5 +524,85 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+}
+
+// DonationCard widget to display individual donor cards
+class DonationCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+        decoration: BoxDecoration(
+          color: Color(0xFFFFF5F0), // Background color matching your image
+          borderRadius: BorderRadius.circular(12.0), // Rounded corners
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2), // Soft shadow for a lifted effect
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Square icon on the left
+            Container(
+              height: 90.0,
+              width: 90.0,
+              decoration: BoxDecoration(
+                color: Color(0xFF2C3E75), // Navy blue color
+                borderRadius: BorderRadius.circular(10), // Rounded square
+              ),
+            ),
+            SizedBox(width: 16.0),
+            // Text details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+              Padding(
+              padding: const EdgeInsets.only(bottom: 20.0 , top:16.0),
+                  child:Text(
+                    "SOHAM NARSINHA DALVI",
+                    style: TextStyle(
+                      fontFamily: 'cerapro',
+                      fontSize: 13.2,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade700, // Text color for the name
+                    ),
+                  ),
+              ),
+                  SizedBox(height: 4.0),
+                  Text(
+                    "Feed 10 HungryOnes",
+                    style: TextStyle(
+                      fontFamily: 'cerapro',
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2C3E75), // Dark blue color for emphasis
+                    ),
+                  ),
+                  SizedBox(height: 4.0),
+                  Text(
+                    "In 5 Donations, from Dahisar East",
+                    style: TextStyle(
+                      fontFamily: 'cerapro',
+                      fontSize: 10.0,
+                      color: Colors.grey.shade600, // Subtle grey for less emphasis
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
   }
 }

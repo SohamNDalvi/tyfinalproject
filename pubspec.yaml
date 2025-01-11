@@ -32,6 +32,7 @@ dependencies:
     sdk: flutter
   carousel_slider: ^5.0.0
   dots_indicator: ^3.0.0
+  flutter_svg: ^2.0.17
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -61,25 +62,27 @@ flutter:
   assets:
     - assets/BeOne_Logo.png
     - assets/login_illustration.png
-    - assets/skip_button.png
-    - assets/images/food_donation.png
-    - assets/images/sponsor_banner1.png
+    - assets/skip_button.svg
+    - assets/images/food_donation.svg
+    - assets/images/sponsor_banner1.jpg
     - assets/images/sponsor_banner2.png
     - assets/images/sponsor_banner3.png
     - assets/images/sponsor_banner4.png
     - assets/images/sponsor_banner5.png
     - assets/images/sponsor_banner6.png
-    - assets/images/verified_icon.png
     - assets/images/donor_avatar.png
     - assets/images/illustration.png
+    - assets/images/verified_icon.svg
+    - assets/images/food_donation_background.png
+    - assets/images/profile_icon.svg
   fonts:
-    - family: Inter
+    - family: cerapro
       fonts:
-        - asset: assets/fonts/Inter-Regular.ttf
+        - asset: assets/fonts/cerapro-regular.ttf
           weight: 400
-        - asset: assets/fonts/Inter-Bold.ttf
+        - asset: assets/fonts/cerapro-bold.otf
           weight: 700
-        - asset: assets/fonts/Inter-Italic.ttf
+        - asset: assets/fonts/cerapro-regularitalic.otf
           style: italic
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'home_screen.dart';
 
 class LoginPage extends StatelessWidget {
@@ -32,8 +33,8 @@ class LoginPage extends StatelessWidget {
                         ),
                       ),
                       Positioned(
-                        top: 20, // Adjust for the status bar padding
-                        right: 20,
+                        top: 40, // Adjust for the status bar padding
+                        right: 0,
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -49,10 +50,10 @@ class LoginPage extends StatelessWidget {
                             splashColor: Colors.grey.withOpacity(0.2),
                             highlightColor: Colors.grey.withOpacity(0.1),
                             customBorder: CircleBorder(),
-                            child: Image.asset(
-                              'assets/skip_button.png',
-                              width: 80,
-                              height: 100,
+                            child: SvgPicture.asset(
+                              'assets/skip_button.svg', // Make sure this is the correct path for the SVG file
+                              width: 85,
+                              height: 55,
                             ),
                           ),
                         ),
@@ -69,7 +70,7 @@ class LoginPage extends StatelessWidget {
                         Text(
                           "Welcome To BeOne!",
                           style: TextStyle(
-                            fontFamily: 'Inter',
+                            fontFamily: 'cerapro',
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
                           ),
@@ -79,7 +80,7 @@ class LoginPage extends StatelessWidget {
                           "Login/Register now and be part of a community dedicated to ending hunger",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Inter',
+                            fontFamily: 'cerapro',
                             fontSize: 12,
                             color: Colors.grey.shade900,
                             fontWeight: FontWeight.w500,
@@ -113,7 +114,7 @@ class LoginPage extends StatelessWidget {
                           "Verify your phone number",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Inter',
+                            fontFamily: 'cerapro',
                             fontSize: 21,
                             fontWeight: FontWeight.bold,
                           ),
@@ -123,7 +124,7 @@ class LoginPage extends StatelessWidget {
                           "Enter your phone number to proceed",
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontFamily: 'Inter',
+                            fontFamily: 'cerapro',
                             fontSize: 12,
                             color: Colors.grey.shade800,
                           ),
@@ -143,7 +144,7 @@ class LoginPage extends StatelessWidget {
                                 child: Text(
                                   "+91",
                                   style: TextStyle(
-                                    fontFamily: 'Inter',
+                                    fontFamily: 'cerapro',
                                     fontSize: 14,
                                     color: Colors.grey.shade800,
                                   ),
@@ -153,7 +154,7 @@ class LoginPage extends StatelessWidget {
                             SizedBox(width: 10),
                             Expanded(
                               child: TextField(
-                                style: TextStyle(fontFamily: 'Inter', fontSize: 14),
+                                style: TextStyle(fontFamily: 'cerapro', fontSize: 14),
                                 keyboardType: TextInputType.phone,
                                 decoration: InputDecoration(
                                   hintText: "Phone number",
@@ -180,7 +181,7 @@ class LoginPage extends StatelessWidget {
                               "Login/Register as an employee?",
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontFamily: 'Inter',
+                                fontFamily: 'cerapro',
                                 fontSize: 13,
                                 color: Colors.grey.shade600,
                                 fontWeight: FontWeight.w400,
@@ -203,7 +204,7 @@ class LoginPage extends StatelessWidget {
                           child: Text(
                             "Continue",
                             style: TextStyle(
-                              fontFamily: 'Inter',
+                              fontFamily: 'cerapro',
                               fontSize: 16,
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
