@@ -132,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             // "Food Donation" Text
                             Padding(
-                              padding: const EdgeInsets.only(left: 16.0),
+                              padding: const EdgeInsets.only(left: 18.0,top:5.0),
                               child: Text(
                                 "Food Donation",
                                 style: TextStyle(
@@ -144,9 +144,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             SizedBox(height: 16.0), // Space between text and next section
                             // Rectangle Section
-                            Container(
-                              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 20.0),
-                              height: 250.0, // Set a fixed height for the rectangle
+                        Transform.translate(
+                          offset: Offset(0, -15),
+                            child: Container(
+                              padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 10.0),
+                              height: 249.0, // Set a fixed height for the rectangle
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10.0), // Rounded corners
                               ),
@@ -155,6 +157,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Stack(
                                   children: [
                                     // Full-Width and Full-Height Image
+
                                     Positioned.fill(
                                       child: Image.asset(
                                         'assets/images/food_donation.png', // Path to your inner rectangle image
@@ -163,28 +166,33 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     // Overlay Content
                                     Padding(
-                                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16), // General padding for the entire rectangle
+                                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16), // General padding for the entire rectangle
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           // Description with separate paddings
+
                                           Padding(
                                             padding: const EdgeInsets.only(right: 160.0), // Right padding for "Give food, Give hope"
+
                                             child: Text(
                                               "Give food, Give hope",
                                               style: TextStyle(
+                                                fontFamily: "Inter",
                                                 fontSize: 18.0,
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.grey.shade800, // Text color
                                               ),
                                             ),
                                           ),
+
                                           SizedBox(height: 8.0), // Spacing
                                           Padding(
                                             padding: const EdgeInsets.only(right: 140.0), // Right padding for "A simple act of kindness..."
                                             child: Text(
                                               "A simple act of kindness can change lives",
                                               style: TextStyle(
+                                                fontFamily: "Inter",
                                                 fontSize: 14.0,
                                                 color: Colors.grey.shade600, // Text color
                                               ),
@@ -198,7 +206,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                               onPressed: () {
                                                 // Implement your button action here
                                               },
-                                              child: Text("START DONATING TODAY"),
+                                              child: Text("START DONATING TODAY",
+                                                style: TextStyle(fontFamily: "Inter",fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
                                               style: ElevatedButton.styleFrom(
                                                 foregroundColor: Colors.white, // Text color
                                                 backgroundColor: Colors.orange, // Button background color
@@ -215,11 +226,40 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                             ),
+                        ),
                           ],
                         ),
                       ],
                     ),
                   ),
+
+                  // Be BeOne Verified Section
+                  Padding(
+                    padding: const EdgeInsets.only(left:16,right: 16,top:14,bottom: 18),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Implement your button action here
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.zero, // Remove padding to make the image occupy full space
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                      ),
+                      child: Container(
+                        height: 70.0, // Set the desired height for the button
+                        width: double.infinity, // Make the width of the button stretch to full width
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10.0),
+                        ),
+                        child: Image.asset(
+                          'assets/images/verified_icon.png', // Path to your image
+                          fit: BoxFit.cover, // Ensure the image covers the whole button
+                        ),
+                      ),
+                    ),
+                  ),
+
                   // Highest Donors Section
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0,vertical: 3.0),
@@ -230,13 +270,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text("Highest donors", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0 , color: Colors.grey.shade700)),
-                            TextButton(onPressed: () {}, child: Text("Explore all")),
+                            TextButton(onPressed: () {}, child: Text("Explore all >")),
                           ],
                         ),
                         SizedBox(
                           height: 180.0,
                           child: PageView.builder(
-                            controller: PageController(viewportFraction: 0.8), // To show 3 cards at once
+                            controller: PageController(viewportFraction: 10), // To show 3 cards at once
                             itemCount: 10,
                             onPageChanged: (index) {
                               setState(() {
@@ -252,8 +292,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                 },
                                 child: Container(
                                   width: 150.0,
+                                  padding: EdgeInsets.only(
+                                    right: 16.0,
+                                    top:16,
+                                     left: 16
+                                     // Add left padding only for the first card
+                                  ),
                                   margin: EdgeInsets.only(right: 11.0),
-                                  padding: EdgeInsets.all(10.0),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(10.0),
@@ -326,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Image Illustration and Caption
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 30, 20),
+                    padding: const EdgeInsets.fromLTRB(16, 50, 30, 30),
                     child: Column(
                       children: [
                         Image.asset("assets/images/illustration.png"), // Replace with your illustration
@@ -343,14 +388,14 @@ class _HomeScreenState extends State<HomeScreen> {
               alignment: Alignment.bottomCenter,
               child: Container(
                 width: 300.0, // Adjust width of the bottom navigation bar
-                height: 80.0, // Adjust height to fit icons and labels
-                margin: EdgeInsets.only(bottom: 16.0),
+                height: 70.0, // Adjust height to fit icons and labels
+                margin: EdgeInsets.only(bottom: 12.0),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(25.0),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.grey.withOpacity(0.6),
                       blurRadius: 5,
                       spreadRadius: 2,
                       offset: Offset(0, 2),
@@ -363,45 +408,84 @@ class _HomeScreenState extends State<HomeScreen> {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
+                        Transform.translate(
+                          offset: Offset(0, -1),
+                          child:IconButton(
                           icon: Icon(Icons.store, color: Colors.grey),
                           onPressed: () {
                             // Navigate to Organic Store
                           },
                         ),
-                        Text(
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 3.0),
+                          child: Transform.translate(
+                            offset: Offset(0, -5),
+                        child:Text(
                           "Organic Store",
-                          style: TextStyle(fontSize: 12.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                          style: TextStyle(fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                        ),
+                        ),
                         ),
                       ],
                     ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        IconButton(
-                          icon: Icon(Icons.home, color: Colors.orange),
-                          onPressed: () {
-                            // Navigate to Home
-                          },
-                        ),
-                        Text(
-                          "Home",
-                          style: TextStyle(fontSize: 12.0, color: Colors.orange ,fontWeight: FontWeight.w500),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Color(0xFFFFF5E5), // Light skin shade color
+                            borderRadius: BorderRadius.circular(15.0), // Rounded corners
+                          ),
+                          padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 0.0), // Inner padding
+                          child: Column(
+                            children: [
+                              Transform.translate(
+                                offset: Offset(0, -1),
+                                child: IconButton(
+                                  icon: Icon(Icons.home, color: Colors.orange),
+                                  onPressed: () {
+                                    // Navigate to Home
+                                  },
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 3.0),
+                                child: Transform.translate(
+                                  offset: Offset(0, -5),
+                                  child: Text(
+                                    "Home",
+                                    style: TextStyle(fontSize: 10.0, color: Colors.grey, fontWeight: FontWeight.w500),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
+                      children: [Transform.translate(
+                        offset: Offset(0, -1),
+                        child:IconButton(
                           icon: Icon(Icons.favorite, color: Colors.grey),
                           onPressed: () {
                             // Navigate to My Donation
                           },
                         ),
-                        Text(
-                          "My Donations",
-                          style: TextStyle(fontSize: 12.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                      ),
+
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 3.0),
+                          child: Transform.translate(
+                            offset: Offset(0, -5),
+                            child:Text(
+                              "My Donation",
+                              style: TextStyle(fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                            ),
+                          ),
                         ),
                       ],
                     ),
