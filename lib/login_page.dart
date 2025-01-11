@@ -1,0 +1,224 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'home_screen.dart';
+
+class LoginPage extends StatelessWidget {
+  const LoginPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Transparent status bar
+        statusBarIconBrightness: Brightness.light, // Light icons for dark background
+      ),
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Top Section with Illustration and Skip Button
+                  Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 380, // Fixed height for illustration
+                        child: Image.asset(
+                          'assets/login_illustration.png', // Replace with your image path
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 20, // Adjust for the status bar padding
+                        right: 20,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              // Navigate to HomeScreen when "Skip" button is pressed
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => HomeScreen(),
+                                ),
+                              );
+                            },
+                            splashColor: Colors.grey.withOpacity(0.2),
+                            highlightColor: Colors.grey.withOpacity(0.1),
+                            customBorder: CircleBorder(),
+                            child: Image.asset(
+                              'assets/skip_button.png',
+                              width: 80,
+                              height: 100,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Welcome Text Section
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Welcome To BeOne!",
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          "Login/Register now and be part of a community dedicated to ending hunger",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: Colors.grey.shade900,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Phone Number Input Section
+                  Container(
+                    padding: EdgeInsets.all(20.0),
+                    height: 393,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(30),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 10,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          "Verify your phone number",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          "Enter your phone number to proceed",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 60,
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  "+91",
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    color: Colors.grey.shade800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                style: TextStyle(fontFamily: 'Inter', fontSize: 14),
+                                keyboardType: TextInputType.phone,
+                                decoration: InputDecoration(
+                                  hintText: "Phone number",
+                                  suffixIcon: Icon(Icons.smartphone, color: Colors.grey.shade600),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.grey.shade200,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        GestureDetector(
+                          onTap: () {
+                            // Handle login/register as employee action
+                          },
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 65.0),
+                            child: Text(
+                              "Login/Register as an employee?",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Handle continue button
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            padding: EdgeInsets.symmetric(vertical: 9),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          child: Text(
+                            "Continue",
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
