@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'donation_form.dart';
+import 'beone_donors.dart';
+
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -256,7 +259,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 width: double.infinity, // Set the button to stretch full width of rectangle
                                                 child: ElevatedButton(
                                                   onPressed: () {
-                                                    // Implement your button action here
+                                                    // Navigate to DonationForm when the button is pressed
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(builder: (context) => DonationForm()),
+                                                    );
                                                   },
                                                   child: Text(
                                                     "START DONATING TODAY              >",
@@ -340,16 +347,31 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                             TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                // Navigate to the BeOneDonors page
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BeOneDonors(), // Replace with the actual widget for the BeOneDonors page
+                                  ),
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero, // Removes extra padding around the button
+                                minimumSize: Size(50, 30), // Sets the minimum size of the button
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Shrinks tap area
+                              ),
                               child: Text(
                                 "Explore all >",
                                 style: TextStyle(
                                   fontSize: 12.0,
-                                  fontFamily: 'cerapro',
+                                  fontFamily: 'cerapro', // Custom font for the text
                                   fontWeight: FontWeight.bold,
+                                  color: Colors.blue.shade700, // Sets the text color to blue
                                 ),
                               ),
                             ),
+
                           ],
                         ),
                         SizedBox(
@@ -505,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
 
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 3.0),
+                          padding: const EdgeInsets.only(bottom: 3.0 , left: 6.0),
                           child: Transform.translate(
                             offset: Offset(0, -5),
                             child:Text(
@@ -536,7 +558,7 @@ class DonationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         decoration: BoxDecoration(
-          color: Color(0xFFFFF5F0), // Background color matching your image
+          color: Colors.white, // Background color matching your image
           borderRadius: BorderRadius.circular(12.0), // Rounded corners
           boxShadow: [
             BoxShadow(
