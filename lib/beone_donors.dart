@@ -11,6 +11,7 @@ class BeOneDonors extends StatelessWidget {
             fontFamily: "cerapro",
             color: Colors.black,
             fontWeight: FontWeight.bold,
+            fontSize: 17,
           ),
         ),
         centerTitle: false,

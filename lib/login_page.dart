@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'home_screen.dart';
+import 'otp_validation_screen.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -192,16 +193,20 @@ class LoginPage extends StatelessWidget {
                         SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: () {
-                            // Handle continue button
+                            // Navigate to the OTPValidationScreen
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const OTPValidationScreen()),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
-                            padding: EdgeInsets.symmetric(vertical: 9),
+                            padding: const EdgeInsets.symmetric(vertical: 9),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: Text(
+                          child: const Text(
                             "Continue",
                             style: TextStyle(
                               fontFamily: 'cerapro',

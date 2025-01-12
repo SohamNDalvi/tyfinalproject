@@ -4,6 +4,7 @@ import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'donation_form.dart';
 import 'beone_donors.dart';
+import 'account_screen.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -56,17 +57,23 @@ class _HomeScreenState extends State<HomeScreen> {
                             // Right Section: Profile and Notification Icons
                             Row(
                               children: [
-                                 // Added padding of 5
-                                  IconButton(
-                                    onPressed: () {
-                                      print("Profile icon tapped");
-                                    },
-                                    icon: SvgPicture.asset(
-                                      'assets/images/profile_icon.svg',
-                                      width: 28.0,
-                                      height: 28.0,
-                                    ),
+                                // Added padding of 5
+                                IconButton(
+                                  onPressed: () {
+                                    // Navigate to the AccountScreen
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const AccountScreen(),
+                                      ),
+                                    );
+                                  },
+                                  icon: SvgPicture.asset(
+                                    'assets/images/profile_icon.svg',
+                                    width: 28.0,
+                                    height: 28.0,
                                   ),
+                                ),
 
                                 SizedBox(width: 0.0), // This is not necessary as it won't add any space
                                 IconButton(
@@ -587,18 +594,18 @@ class DonationCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-              Padding(
-              padding: const EdgeInsets.only(bottom: 20.0 , top:16.0),
-                  child:Text(
-                    "SOHAM NARSINHA DALVI",
-                    style: TextStyle(
-                      fontFamily: 'cerapro',
-                      fontSize: 13.2,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade700, // Text color for the name
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20.0 , top:16.0),
+                    child:Text(
+                      "SOHAM NARSINHA DALVI",
+                      style: TextStyle(
+                        fontFamily: 'cerapro',
+                        fontSize: 13.2,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey.shade700, // Text color for the name
+                      ),
                     ),
                   ),
-              ),
                   SizedBox(height: 4.0),
                   Text(
                     "Feed 10 HungryOnes",
