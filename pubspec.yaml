@@ -72,6 +72,8 @@ flutter:
     - assets/images/sponsor_banner6.png
     - assets/images/donor_avatar.png
     - assets/images/illustration.png
+    - assets/images/validate_illustration.png
+    - assets/images/Account_creation_illustration.png
     - assets/images/verified_icon.svg
     - assets/images/food_donation_background.png
     - assets/images/profile_icon.svg

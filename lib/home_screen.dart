@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'donation_form.dart';
 import 'beone_donors.dart';
 import 'account_screen.dart';
+import 'my_donations.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -528,21 +529,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         child:IconButton(
                           icon: Icon(Icons.favorite, color: Colors.grey),
                           onPressed: () {
-                            // Navigate to My Donation
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => MyDonationsPage()),
+                            );
                           },
                         ),
                       ),
 
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 3.0 , left: 6.0),
-                          child: Transform.translate(
-                            offset: Offset(0, -5),
-                            child:Text(
-                              "My Donation",
-                              style: TextStyle(fontFamily:"cerapro",fontSize: 10.0, color: Colors.grey ,fontWeight: FontWeight.w500),
+                        GestureDetector(
+                          onTap: () {
+                            // Navigate to MyDonationsPage when the text is clicked
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => MyDonationsPage()),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 3.0, left: 6.0),
+                            child: Transform.translate(
+                              offset: Offset(0, -5),
+                              child: Text(
+                                "My Donation",
+                                style: TextStyle(
+                                  fontFamily: "cerapro",
+                                  fontSize: 10.0,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
+                        )
                       ],
                     ),
                   ],
