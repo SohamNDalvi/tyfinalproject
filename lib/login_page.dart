@@ -112,7 +112,7 @@ class LoginPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          "Verify your phone number",
+                          "Verify your Email Address",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'cerapro',
@@ -122,7 +122,7 @@ class LoginPage extends StatelessWidget {
                         ),
                         SizedBox(height: 10),
                         Text(
-                          "Enter your phone number to proceed",
+                          "Enter your Email ID to proceed",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'cerapro',
@@ -133,33 +133,14 @@ class LoginPage extends StatelessWidget {
                         SizedBox(height: 20),
                         Row(
                           children: [
-                            Container(
-                              width: 80,
-                              height: 60,
-                              padding: EdgeInsets.symmetric(horizontal: 10),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  "+91",
-                                  style: TextStyle(
-                                    fontFamily: 'cerapro',
-                                    fontSize: 14,
-                                    color: Colors.grey.shade800,
-                                  ),
-                                ),
-                              ),
-                            ),
                             SizedBox(width: 10),
                             Expanded(
                               child: TextField(
                                 style: TextStyle(fontFamily: 'cerapro', fontSize: 14),
-                                keyboardType: TextInputType.phone,
+                                keyboardType: TextInputType.emailAddress,
                                 decoration: InputDecoration(
-                                  hintText: "Phone number",
-                                  suffixIcon: Icon(Icons.smartphone, color: Colors.grey.shade600),
+                                  hintText: "Email ID",
+                                  suffixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(10),
                                     borderSide: BorderSide.none,
