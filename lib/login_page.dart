@@ -4,8 +4,36 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'home_screen.dart';
 import 'otp_validation_screen.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final TextEditingController emailController = TextEditingController();
+  String? errorMessage; // Holds the error message
+
+  void validateEmail() {
+    String email = emailController.text.trim();
+    String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+    RegExp regex = RegExp(emailPattern);
+
+    setState(() {
+      if (email.isEmpty) {
+        errorMessage = "Email field cannot be empty.";
+      } else if (!regex.hasMatch(email)) {
+        errorMessage = "Sorry, this doesn't look like a valid email address.";
+      } else {
+        errorMessage = null; // Clear the error if validation passes
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const OTPValidationScreen()),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +95,7 @@ class LoginPage extends StatelessWidget {
                     padding: const EdgeInsets.all(20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
+                      children: const [
                         Text(
                           "Welcome To BeOne!",
                           style: TextStyle(
@@ -83,7 +111,7 @@ class LoginPage extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'cerapro',
                             fontSize: 12,
-                            color: Colors.grey.shade900,
+                            color: Colors.grey,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -91,13 +119,13 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
 
-                  // Phone Number Input Section
+                  // Email Input Section
                   Container(
-                    padding: EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(20.0),
                     height: 393,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.vertical(
+                      borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(30),
                       ),
                       boxShadow: [
@@ -111,7 +139,7 @@ class LoginPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
+                        const Text(
                           "Verify your Email Address",
                           textAlign: TextAlign.center,
                           style: TextStyle(
@@ -120,66 +148,59 @@ class LoginPage extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: 10),
-                        Text(
+                        const SizedBox(height: 10),
+                        const Text(
                           "Enter your Email ID to proceed",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'cerapro',
                             fontSize: 12,
-                            color: Colors.grey.shade800,
+                            color: Colors.grey,
                           ),
                         ),
-                        SizedBox(height: 20),
-                        Row(
-                          children: [
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: TextField(
-                                style: TextStyle(fontFamily: 'cerapro', fontSize: 14),
-                                keyboardType: TextInputType.emailAddress,
-                                decoration: InputDecoration(
-                                  hintText: "Email ID",
-                                  suffixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                    borderSide: BorderSide.none,
+                        const SizedBox(height: 20),
+
+                        // Error Message Section
+                        if (errorMessage != null)
+                          Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.red),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  errorMessage!,
+                                  style: const TextStyle(
+                                    fontFamily: 'cerapro',
+                                    fontSize: 14,
+                                    color: Colors.red,
                                   ),
-                                  filled: true,
-                                  fillColor: Colors.grey.shade200,
                                 ),
                               ),
+                            ],
+                          ),
+                        const SizedBox(height: 10),
+
+                        // TextField Section
+                        TextField(
+                          controller: emailController,
+                          style: const TextStyle(fontFamily: 'cerapro', fontSize: 14),
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            hintText: "Email ID",
+                            suffixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
                             ),
-                          ],
-                        ),
-                        SizedBox(height: 20),
-                        GestureDetector(
-                          onTap: () {
-                            // Handle login/register as employee action
-                          },
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 65.0),
-                            child: Text(
-                              "Login/Register as an employee?",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'cerapro',
-                                fontSize: 13,
-                                color: Colors.grey.shade600,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade200,
                           ),
                         ),
-                        SizedBox(height: 20),
+                        const SizedBox(height: 20),
+
+                        // Continue Button
                         ElevatedButton(
-                          onPressed: () {
-                            // Navigate to the OTPValidationScreen
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const OTPValidationScreen()),
-                            );
-                          },
+                          onPressed: validateEmail,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             padding: const EdgeInsets.symmetric(vertical: 9),

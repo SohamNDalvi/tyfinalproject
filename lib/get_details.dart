@@ -51,8 +51,9 @@ class _GetDetailsScreenState extends State<GetDetailsScreen> {
                   const SizedBox(height: 10.0),
                   // Email ID
                   const CustomTextField(
-                    hintText: "email id",
-                    icon: Icons.email_outlined,
+                    hintText: "phone number",
+                    icon: Icons.phone_android_outlined,
+                    // Sets the icon color to grey
                   ),
                   const SizedBox(height: 10.0),
                   // DOB with Date Picker
