@@ -31,16 +31,22 @@ dependencies:
   flutter:
     sdk: flutter
   carousel_slider: ^5.0.0
-  cloud_firestore: ^4.10.0
+  shared_preferences: ^2.0.11
+  hive: ^2.2.0
+  hive_flutter: ^1.1.0
+  path_provider: ^2.0.11
+  cloud_firestore: ^5.5.0
   dots_indicator: ^3.0.0
   flutter_svg: ^2.0.17
-  firebase_core: ^2.32.0  # Use the latest compatible version
-  firebase_auth: ^4.6.1   # Ensure it's compatible with firebase_core version
-  firebase_dynamic_links: ^5.0.0
+  firebase_core: ^3.9.0  # Use the latest compatible version
+  firebase_auth: ^5.3.4   # Ensure it's compatible with firebase_core version
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-
+  http: ^1.0.0
+  geolocator: ^9.0.0
+  geocoding: ^2.0.0
+  permission_handler: ^10.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

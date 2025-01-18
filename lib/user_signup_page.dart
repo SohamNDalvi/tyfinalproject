@@ -1,3 +1,4 @@
+import 'package:final_project/get_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'otp_validation_screen.dart';
 import 'user_login_page.dart';
+import 'get_details.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserSignupPage extends StatefulWidget {
   const UserSignupPage({Key? key}) : super(key: key);
@@ -24,6 +27,7 @@ class _UserSignupPage extends State<UserSignupPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  // Inside your validateAndSignup method
   void validateAndSignup() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
@@ -57,12 +61,19 @@ class _UserSignupPage extends State<UserSignupPage> {
         if (user != null) {
           await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
             'email': email,
+            'UserType': 'user',
             'createdAt': FieldValue.serverTimestamp(),
           });
-        // After successful registration, navigate to OTP validation screen
+
+          // Save UID to local storage
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('uid', user.uid);
+          String? savedUid = prefs.getString('uid');
+          print("Saved UID: $savedUid");
+          // Navigate to GetDetailsScreen
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const OTPValidationScreen()),
+            MaterialPageRoute(builder: (context) => const GetDetailsScreen()),
           );
         }
       } catch (e) {

@@ -1,7 +1,101 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'user_login_page.dart';
+import 'support_page.dart';
 
-class AccountScreen extends StatelessWidget {
+class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
+
+  @override
+  _AccountScreenState createState() => _AccountScreenState();
+}
+
+Future<void> _logout(BuildContext context) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('uid');  // Clear the stored user ID
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => UserLoginPage()),  // Navigate to UserLoginPage
+  );
+}
+
+class _AccountScreenState extends State<AccountScreen> {
+  String firstName = '';
+  String lastName = '';
+  String email = '';
+  String phoneNumber = '';
+  String dob = '';
+  String gender = '';
+
+  TextEditingController firstNameController = TextEditingController();
+  TextEditingController lastNameController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController phoneNumberController = TextEditingController();
+  TextEditingController dobController = TextEditingController();
+  TextEditingController genderController = TextEditingController();
+
+  bool isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  // Fetch user data from Firestore using the uid
+  Future<void> _fetchUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('uid'); // Fetch the user ID from SharedPreferences
+
+    if (userId != null) {
+      // Fetch user data from Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        setState(() {
+          firstName = userDoc['firstName'] ?? '';
+          lastName = userDoc['lastName'] ?? '';
+          email = userDoc['email'] ?? '';
+          phoneNumber = userDoc['phoneNumber'] ?? '';
+          dob = userDoc['dob'] ?? '';
+          gender = userDoc['gender'] ?? '';
+
+          // Set the controllers with fetched values for editing
+          firstNameController.text = firstName;
+          lastNameController.text = lastName;
+          emailController.text = email;
+          phoneNumberController.text = phoneNumber;
+          dobController.text = dob;
+          genderController.text = gender;
+        });
+      }
+    }
+  }
+
+  // Update user data in Firestore
+  Future<void> _updateUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('uid');
+
+    if (userId != null) {
+      // Update Firestore only if any field is modified
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'firstName': firstNameController.text.isNotEmpty ? firstNameController.text : firstName,
+        'lastName': lastNameController.text.isNotEmpty ? lastNameController.text : lastName,
+        'email': emailController.text.isNotEmpty ? emailController.text : email,
+        'phoneNumber': phoneNumberController.text.isNotEmpty ? phoneNumberController.text : phoneNumber,
+        'dob': dobController.text.isNotEmpty ? dobController.text : dob,
+        'gender': genderController.text.isNotEmpty ? genderController.text : gender,
+      });
+
+      // After update, fetch the latest data
+      _fetchUserData();
+      setState(() {
+        isEditing = false; // Hide the Save button after updating
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,46 +120,146 @@ class AccountScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 16.0),
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.red,
-              child: const Text(
-                "SR",
-                style: TextStyle(
-                  fontFamily: 'cerapro',
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.red,
+                  child: Text(
+                    "${firstName.isNotEmpty ? firstName[0] : 'S'}${lastName.isNotEmpty ? lastName[0] : 'D'}",
+                    style: const TextStyle(
+                      fontFamily: 'cerapro',
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        isEditing = !isEditing; // Toggle editing mode
+                      });
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16.0),
-            const Text(
-              "Soham Dalvi",
-              style: TextStyle(
-                fontFamily: 'cerapro',
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                isEditing
+                    ? Expanded(
+                  child: TextField(
+                    controller: firstNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'First Name',
+                    ),
+                  ),
+                )
+                    : Text(
+                  firstName.isNotEmpty ? firstName : "First Name",
+                  style: const TextStyle(
+                    fontFamily: 'cerapro',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8.0),
+                isEditing
+                    ? Expanded(
+                  child: TextField(
+                    controller: lastNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Last Name',
+                    ),
+                  ),
+                )
+                    : Text(
+                  lastName.isNotEmpty ? lastName : "Last Name",
+                  style: const TextStyle(
+                    fontFamily: 'cerapro',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 4.0),
-            const Text(
-              "EMAIL ID: sohamdalvi12@gmail.com",
-              style: TextStyle(
+            isEditing
+                ? TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                labelText: 'Email ID',
+              ),
+            )
+                : Text(
+              email.isNotEmpty ? "EMAIL ID: $email" : "EMAIL ID: Not Available",
+              style: const TextStyle(
                 fontFamily: 'cerapro',
                 fontSize: 14,
                 color: Colors.black54,
               ),
             ),
             const SizedBox(height: 2.0),
-            const Text(
-              "Paytm: +91 8591509629",
-              style: TextStyle(
+            isEditing
+                ? TextField(
+              controller: phoneNumberController,
+              decoration: const InputDecoration(
+                labelText: 'Paytm Number',
+              ),
+            )
+                : Text(
+              phoneNumber.isNotEmpty ? "Paytm: $phoneNumber" : "Paytm: Not Available",
+              style: const TextStyle(
                 fontFamily: 'cerapro',
                 fontSize: 14,
                 color: Colors.black54,
               ),
             ),
+            const SizedBox(height: 4.0),
+            isEditing
+                ? TextField(
+              controller: dobController,
+              decoration: const InputDecoration(
+                labelText: 'Date of Birth',
+              ),
+            )
+                : Text(
+              dob.isNotEmpty ? "Date of Birth: $dob" : "Date of Birth: Not Available",
+              style: const TextStyle(
+                fontFamily: 'cerapro',
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 2.0),
+            isEditing
+                ? TextField(
+              controller: genderController,
+              decoration: const InputDecoration(
+                labelText: 'Gender',
+              ),
+            )
+                : Text(
+              gender.isNotEmpty ? "Gender: $gender" : "Gender: Not Available",
+              style: const TextStyle(
+                fontFamily: 'cerapro',
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 16.0),
+            if (isEditing) // Show Save button only in edit mode
+              ElevatedButton(
+                onPressed: _updateUserData,
+                child: const Text('Save'),
+              ),
             const SizedBox(height: 16.0),
             Card(
               shape: RoundedRectangleBorder(
@@ -111,7 +305,7 @@ class AccountScreen extends StatelessWidget {
                   ),
                   const Divider(),
                   ListTile(
-                    leading: Icon(Icons.headset_mic, color: Colors.black),
+                    leading: const Icon(Icons.headset_mic, color: Colors.black),
                     title: const Text(
                       "24*7 Help & Support",
                       style: TextStyle(
@@ -119,7 +313,12 @@ class AccountScreen extends StatelessWidget {
                       ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SupportPage()),
+                      );
+                    },
                   ),
                   const Divider(),
                   ListTile(
@@ -131,7 +330,9 @@ class AccountScreen extends StatelessWidget {
                       ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {},
+                    onTap: () {
+                      _logout(context);  // Pass the context here
+                    },
                   ),
                 ],
               ),

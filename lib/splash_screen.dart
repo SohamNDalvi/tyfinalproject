@@ -6,6 +6,7 @@ import 'user_login_page.dart'; // Import for navigation to login page
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
+
   @override
   State<SplashScreen> createState() => _SplashScreenState();
 }
