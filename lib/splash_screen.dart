@@ -1,6 +1,6 @@
 import 'dart:async'; // Import for Timer
 import 'package:flutter/material.dart';
-import 'login_page.dart'; // Import for navigation to login page
+import 'user_login_page.dart'; // Import for navigation to login page
 
 
 class SplashScreen extends StatefulWidget {
@@ -19,7 +19,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
+        MaterialPageRoute(builder: (context) => const UserLoginPage()),
       );
     });
   }

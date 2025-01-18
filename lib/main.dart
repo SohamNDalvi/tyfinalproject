@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'splash_screen.dart';
-import 'login_page.dart';
+import 'User_login_page.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() {
+void main() async {
+  // Ensure Firebase is initialized before running the app
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(); // Initialize Firebase
+
   runApp(const MyApp());
 }
 
@@ -13,7 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      home: const SplashScreen(), // Start with the splash screen
     );
   }
 }

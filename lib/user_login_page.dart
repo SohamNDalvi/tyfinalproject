@@ -3,25 +3,30 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'home_screen.dart';
 import 'otp_validation_screen.dart';
+import 'emp_login_page.dart';
+import 'user_signup_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+class UserLoginPage extends StatefulWidget {
+  const UserLoginPage({Key? key}) : super(key: key);
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<UserLoginPage> createState() => _UserLoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _UserLoginPageState extends State<UserLoginPage> {
+  final TextEditingController passwordController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   String? errorMessage; // Holds the error message
+  bool _obscurePassword = true;
 
   void validateEmail() {
     String email = emailController.text.trim();
+    String password = passwordController.text.trim();
     String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
     RegExp regex = RegExp(emailPattern);
 
     setState(() {
-      if (email.isEmpty) {
+      if (email.isEmpty || password.isEmpty) {
         errorMessage = "Email field cannot be empty.";
       } else if (!regex.hasMatch(email)) {
         errorMessage = "Sorry, this doesn't look like a valid email address.";
@@ -55,9 +60,9 @@ class _LoginPageState extends State<LoginPage> {
                     children: [
                       Container(
                         width: double.infinity,
-                        height: 380, // Fixed height for illustration
+                        height: MediaQuery.of(context).size.height * 0.4, // Dynamic height
                         child: Image.asset(
-                          'assets/login_illustration.png', // Replace with your image path
+                          'assets/login_illustration.png',
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -68,7 +73,6 @@ class _LoginPageState extends State<LoginPage> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              // Navigate to HomeScreen when "Skip" button is pressed
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -80,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                             highlightColor: Colors.grey.withOpacity(0.1),
                             customBorder: CircleBorder(),
                             child: SvgPicture.asset(
-                              'assets/skip_button.svg', // Make sure this is the correct path for the SVG file
+                              'assets/skip_button.svg',
                               width: 85,
                               height: 55,
                             ),
@@ -89,28 +93,26 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ],
                   ),
-
-                  // Welcome Text Section
                   Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.fromLTRB(20,0, 20, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: const [
                         Text(
-                          "Welcome To BeOne!",
+                          "Welcome Back To BeOne!",
                           style: TextStyle(
                             fontFamily: 'cerapro',
-                            fontSize: 24,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        SizedBox(height: 10),
+                        SizedBox(height: 5),
                         Text(
-                          "Login/Register now and be part of a community dedicated to ending hunger",
+                          "Login now and be part of a community dedicated to ending hunger",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'cerapro',
-                            fontSize: 12,
+                            fontSize: 13,
                             color: Colors.grey,
                             fontWeight: FontWeight.w500,
                           ),
@@ -121,8 +123,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Email Input Section
                   Container(
-                    padding: const EdgeInsets.all(20.0),
-                    height: 393,
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: const BorderRadius.vertical(
@@ -140,25 +141,35 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Text(
-                          "Verify your Email Address",
+                          "Verify your Email Id and Password",
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontFamily: 'cerapro',
-                            fontSize: 21,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          "Enter your Email ID to proceed",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'cerapro',
-                            fontSize: 12,
-                            color: Colors.grey,
+                        const SizedBox(height: 5),
+                        GestureDetector(
+                          onTap: () {
+                            // Navigate to EmpLoginPage
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const EmpLoginPage()),
+                            );
+                          },
+                          child: const Text(
+                            "Login/Register as an employee? Click here",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'cerapro',
+                              fontSize: 12,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 10),
 
                         // Error Message Section
                         if (errorMessage != null)
@@ -178,8 +189,6 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ],
                           ),
-                        const SizedBox(height: 10),
-
                         // TextField Section
                         TextField(
                           controller: emailController,
@@ -187,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             hintText: "Email ID",
-                            suffixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
+                            prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide.none,
@@ -196,9 +205,44 @@ class _LoginPageState extends State<LoginPage> {
                             fillColor: Colors.grey.shade200,
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: passwordController,
+                          obscureText: _obscurePassword, // Control visibility based on the flag
+                          style: const TextStyle(fontFamily: 'cerapro', fontSize: 14),
+                          decoration: InputDecoration(
+                            hintText: "Password",
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: Colors.grey.shade600),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                color: Colors.grey.shade600,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade200,
+                          ),
+                        ),
 
-                        // Continue Button
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {},
+                            child: const Text(
+                              "Forgot Password?",
+                              style: TextStyle(fontSize: 12, color: Colors.orange , fontFamily: 'cerapro',fontWeight:FontWeight.w600),
+                            ),
+                          ),
+                        ),
                         ElevatedButton(
                           onPressed: validateEmail,
                           style: ElevatedButton.styleFrom(
@@ -214,6 +258,63 @@ class _LoginPageState extends State<LoginPage> {
                               fontFamily: 'cerapro',
                               fontSize: 16,
                               color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: const [
+                            Expanded(child: Divider(color: Colors.grey)),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 7.0),
+                              child: Text("OR", style: TextStyle(color: Colors.grey , fontSize: 10)),
+                            ),
+                            Expanded(child: Divider(color: Colors.grey)),
+                          ],
+                        ),
+                        const SizedBox(height: 5),
+                        GestureDetector(
+                          onTap: () {
+                            // Navigate to UserSignupPage when tapped
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const UserSignupPage()),
+                            );
+                          },
+                          child: const Text(
+                            "New to BeOne? Join now",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'cerapro',
+                              fontSize: 12,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 5),
+                        OutlinedButton.icon(
+                          onPressed: () {},
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.orange),
+                            padding: const EdgeInsets.symmetric(vertical: 9),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: SvgPicture.asset(
+                            'assets/google_icon.svg',
+                            width: 20,
+                            height: 20,
+                          ),
+                          label: const Text(
+                            "Continue with Google",
+                            style: TextStyle(
+                              fontFamily: 'cerapro',
+                              fontSize: 16,
+                              color: Colors.orange,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
