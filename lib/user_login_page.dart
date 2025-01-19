@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'otp_validation_screen.dart';
 import 'emp_login_page.dart';
@@ -19,33 +22,77 @@ class _UserLoginPageState extends State<UserLoginPage> {
   String? errorMessage; // Holds the error message
   bool _obscurePassword = true;
 
-  void validateEmail() {
+  Future<void> validateEmail() async {
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
     String emailPattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
     RegExp regex = RegExp(emailPattern);
 
-    setState(() {
-      if (email.isEmpty || password.isEmpty) {
-        errorMessage = "Email field cannot be empty.";
-      } else if (!regex.hasMatch(email)) {
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        errorMessage = "Email and Password fields cannot be empty.";
+      });
+      return;
+    }
+
+    if (!regex.hasMatch(email)) {
+      setState(() {
         errorMessage = "Sorry, this doesn't look like a valid email address.";
+      });
+      return;
+    }
+
+    try {
+      // Sign in the user
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+      String uid = userCredential.user!.uid;
+
+      // Store UID in SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('uid', uid);
+      String? savedUid = prefs.getString('uid');
+      print("Saved UID: $savedUid");
+
+      // Fetch user data from Firestore
+      DocumentSnapshot userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (userDoc.exists) {
+        String userType = userDoc['UserType'];
+        if (userType == 'user') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          setState(() {
+            errorMessage =
+            "Your email ID is registered as an employee. Please log in with a user's email ID.";
+          });
+        }
       } else {
-        errorMessage = null; // Clear the error if validation passes
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const OTPValidationScreen()),
-        );
+        setState(() {
+          errorMessage = "User not found. Please check your credentials.";
+        });
       }
-    });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = "An unexpected error occurred. Please try again.";
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent, // Transparent status bar
-        statusBarIconBrightness: Brightness.light, // Light icons for dark background
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
         resizeToAvoidBottomInset: true,
@@ -55,19 +102,18 @@ class _UserLoginPageState extends State<UserLoginPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Top Section with Illustration and Skip Button
                   Stack(
                     children: [
                       Container(
                         width: double.infinity,
-                        height: MediaQuery.of(context).size.height * 0.4, // Dynamic height
+                        height: MediaQuery.of(context).size.height * 0.4,
                         child: Image.asset(
                           'assets/login_illustration.png',
                           fit: BoxFit.cover,
                         ),
                       ),
                       Positioned(
-                        top: 40, // Adjust for the status bar padding
+                        top: 40,
                         right: 0,
                         child: Material(
                           color: Colors.transparent,
@@ -82,7 +128,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                             },
                             splashColor: Colors.grey.withOpacity(0.2),
                             highlightColor: Colors.grey.withOpacity(0.1),
-                            customBorder: CircleBorder(),
+                            customBorder: const CircleBorder(),
                             child: SvgPicture.asset(
                               'assets/skip_button.svg',
                               width: 85,
@@ -94,7 +140,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                     ],
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20,0, 20, 20),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: const [
@@ -120,8 +166,6 @@ class _UserLoginPageState extends State<UserLoginPage> {
                       ],
                     ),
                   ),
-
-                  // Email Input Section
                   Container(
                     padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
                     decoration: BoxDecoration(
@@ -152,10 +196,10 @@ class _UserLoginPageState extends State<UserLoginPage> {
                         const SizedBox(height: 5),
                         GestureDetector(
                           onTap: () {
-                            // Navigate to EmpLoginPage
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const EmpLoginPage()),
+                              MaterialPageRoute(
+                                  builder: (context) => const EmpLoginPage()),
                             );
                           },
                           child: const Text(
@@ -170,8 +214,6 @@ class _UserLoginPageState extends State<UserLoginPage> {
                           ),
                         ),
                         const SizedBox(height: 10),
-
-                        // Error Message Section
                         if (errorMessage != null)
                           Row(
                             children: [
@@ -189,14 +231,14 @@ class _UserLoginPageState extends State<UserLoginPage> {
                               ),
                             ],
                           ),
-                        // TextField Section
                         TextField(
                           controller: emailController,
                           style: const TextStyle(fontFamily: 'cerapro', fontSize: 14),
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             hintText: "Email ID",
-                            prefixIcon: Icon(Icons.email_outlined, color: Colors.grey.shade600),
+                            prefixIcon: Icon(Icons.email_outlined,
+                                color: Colors.grey.shade600),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide.none,
@@ -208,14 +250,17 @@ class _UserLoginPageState extends State<UserLoginPage> {
                         const SizedBox(height: 8),
                         TextField(
                           controller: passwordController,
-                          obscureText: _obscurePassword, // Control visibility based on the flag
+                          obscureText: _obscurePassword,
                           style: const TextStyle(fontFamily: 'cerapro', fontSize: 14),
                           decoration: InputDecoration(
                             hintText: "Password",
-                            prefixIcon: Icon(Icons.lock_outline_rounded, color: Colors.grey.shade600),
+                            prefixIcon: Icon(Icons.lock_outline_rounded,
+                                color: Colors.grey.shade600),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                                 color: Colors.grey.shade600,
                               ),
                               onPressed: () {
@@ -232,14 +277,17 @@ class _UserLoginPageState extends State<UserLoginPage> {
                             fillColor: Colors.grey.shade200,
                           ),
                         ),
-
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
                             onPressed: () {},
                             child: const Text(
                               "Forgot Password?",
-                              style: TextStyle(fontSize: 12, color: Colors.orange , fontFamily: 'cerapro',fontWeight:FontWeight.w600),
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.orange,
+                                  fontFamily: 'cerapro',
+                                  fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),

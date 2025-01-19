@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'donation_form.dart';
 import 'beone_donors.dart';
 import 'account_screen.dart';
 import 'my_donations.dart';
-
-
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -15,8 +16,64 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0; // To track the current carousel index
+  String _currentAddress = "Fetching location...";
+  int _currentIndex = 0;
   int _donorsIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLocation();
+  }
+
+  Future<void> _fetchLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return; // Do nothing if location services are disabled
+    }
+
+    // Check for location permissions
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return; // Do nothing if permission is denied
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return; // Do nothing if permissions are permanently denied
+    }
+
+    // Get the current location
+    Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+
+    // Convert latitude and longitude to a human-readable address
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude, position.longitude);
+      Placemark place = placemarks.first;
+
+      String address =
+          "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.country}";
+
+      // Save the address to SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_address', address);
+
+      // Update the UI
+      setState(() {
+        _currentAddress = address;
+      });
+    } catch (e) {
+      print("Failed to get address: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +81,6 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Scrollable content
             SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,33 +92,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space out children evenly
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Left Section: Location
                             Row(
                               children: [
                                 Icon(Icons.location_on, color: Colors.orange),
                                 SizedBox(width: 8.0),
                                 Text(
-                                  "Home",
+                                  "Current Location",
                                   style: TextStyle(
                                     fontFamily: "cerapro",
                                     fontWeight: FontWeight.bold,
                                     fontSize: 16.0,
                                   ),
                                 ),
-                                SizedBox(width: 4.0), // Space between text and arrow
+                                SizedBox(width: 4.0),
                                 Icon(Icons.keyboard_arrow_down, size: 20.0, color: Colors.grey),
                               ],
                             ),
-
-                            // Right Section: Profile and Notification Icons
                             Row(
                               children: [
-                                // Added padding of 5
                                 IconButton(
                                   onPressed: () {
-                                    // Navigate to the AccountScreen
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -76,8 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     height: 28.0,
                                   ),
                                 ),
-
-                                SizedBox(width: 0.0), // This is not necessary as it won't add any space
                                 IconButton(
                                   onPressed: () {
                                     print("Notification icon tapped");
@@ -92,11 +141,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 4.0), // Add spacing between the first and second rows
+                        SizedBox(height: 4.0),
                         Padding(
                           padding: const EdgeInsets.only(left: 5.0),
                           child: Text(
-                            "A 12, mansi building, river park, ash...",
+                            _currentAddress,
                             style: TextStyle(
                               fontFamily: "cerapro",
                               fontSize: 12.0,

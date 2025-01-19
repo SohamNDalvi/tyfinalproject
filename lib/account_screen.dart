@@ -126,7 +126,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   radius: 40,
                   backgroundColor: Colors.red,
                   child: Text(
-                    "${firstName.isNotEmpty ? firstName[0] : 'S'}${lastName.isNotEmpty ? lastName[0] : 'D'}",
+                    "${firstName.isNotEmpty ? firstName[0] : ''}${lastName.isNotEmpty ? lastName[0] : ''}",
                     style: const TextStyle(
                       fontFamily: 'cerapro',
                       color: Colors.white,
@@ -163,7 +163,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 )
                     : Text(
-                  firstName.isNotEmpty ? firstName : "First Name",
+                  firstName.isNotEmpty ? firstName : "",
                   style: const TextStyle(
                     fontFamily: 'cerapro',
                     fontSize: 20,
@@ -181,7 +181,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   ),
                 )
                     : Text(
-                  lastName.isNotEmpty ? lastName : "Last Name",
+                  lastName.isNotEmpty ? lastName : "",
                   style: const TextStyle(
                     fontFamily: 'cerapro',
                     fontSize: 20,
@@ -199,7 +199,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             )
                 : Text(
-              email.isNotEmpty ? "EMAIL ID: $email" : "EMAIL ID: Not Available",
+              email.isNotEmpty ? "EMAIL ID: $email" : "",
               style: const TextStyle(
                 fontFamily: 'cerapro',
                 fontSize: 14,
@@ -211,11 +211,11 @@ class _AccountScreenState extends State<AccountScreen> {
                 ? TextField(
               controller: phoneNumberController,
               decoration: const InputDecoration(
-                labelText: 'Paytm Number',
+                labelText: 'Phone Number',
               ),
             )
                 : Text(
-              phoneNumber.isNotEmpty ? "Paytm: $phoneNumber" : "Paytm: Not Available",
+              phoneNumber.isNotEmpty ? "Phone Number: $phoneNumber" : "",
               style: const TextStyle(
                 fontFamily: 'cerapro',
                 fontSize: 14,
@@ -231,7 +231,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             )
                 : Text(
-              dob.isNotEmpty ? "Date of Birth: $dob" : "Date of Birth: Not Available",
+              dob.isNotEmpty ? "Date of Birth: $dob" : "",
               style: const TextStyle(
                 fontFamily: 'cerapro',
                 fontSize: 14,
@@ -247,7 +247,7 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
             )
                 : Text(
-              gender.isNotEmpty ? "Gender: $gender" : "Gender: Not Available",
+              gender.isNotEmpty ? "Gender: $gender" : "",
               style: const TextStyle(
                 fontFamily: 'cerapro',
                 fontSize: 14,
