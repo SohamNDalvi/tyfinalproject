@@ -1,4 +1,4 @@
-import 'package:final_project/get_details.dart';
+import 'package:final_project/User_get_details.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'otp_validation_screen.dart';
 import 'user_login_page.dart';
-import 'get_details.dart';
+import 'User_get_details.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserSignupPage extends StatefulWidget {
@@ -73,7 +73,7 @@ class _UserSignupPage extends State<UserSignupPage> {
           // Navigate to GetDetailsScreen
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const GetDetailsScreen()),
+            MaterialPageRoute(builder: (context) => const UserGetDetailsScreen()),
           );
         }
       } catch (e) {

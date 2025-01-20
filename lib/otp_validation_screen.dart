@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'get_details.dart';
+import 'User_get_details.dart';
 
 class OTPValidationScreen extends StatefulWidget {
   const OTPValidationScreen({super.key});
@@ -118,7 +118,7 @@ class _OTPValidationScreenState extends State<OTPValidationScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const GetDetailsScreen()),
+                          MaterialPageRoute(builder: (context) => const UserGetDetailsScreen()),
                         );
                       },
                       style: ElevatedButton.styleFrom(

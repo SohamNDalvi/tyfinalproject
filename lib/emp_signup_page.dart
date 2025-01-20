@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'home_screen.dart';
-import 'otp_validation_screen.dart';
+import 'Emp_get_details.dart';
 import 'user_login_page.dart';
 
 class EmpSignupPage extends StatefulWidget {
@@ -40,7 +40,7 @@ class _EmpSignupPage extends State<EmpSignupPage> {
         errorMessage = null; // Clear the error if validation passes
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const OTPValidationScreen()),
+          MaterialPageRoute(builder: (context) => const EmpGetDetailsScreen()),
         );
       }
     });

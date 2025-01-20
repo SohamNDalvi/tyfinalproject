@@ -135,7 +135,7 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
                             );
                           },
                           child: const Text(
-                            "Login/Register as an employee? Click here",
+                            "Login/Register as an User? Click here",
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'cerapro',
