@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high);
 
-    // Convert latitude and longitude to a human-readable address
+// Convert latitude and longitude to a human-readable address
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
           position.latitude, position.longitude);
@@ -64,7 +64,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Save the address to SharedPreferences
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('current_address', address);
+      await prefs.setDouble('current_latitude', position.latitude);
+      await prefs.setDouble('current_longitude', position.longitude);
 
       // Update the UI
       setState(() {
@@ -75,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(

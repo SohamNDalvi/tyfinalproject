@@ -3,8 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:image_picker/image_picker.dart'; // Import image_picker
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 
 class EmpGetDetailsScreen extends StatefulWidget {
   const EmpGetDetailsScreen({super.key});
@@ -13,70 +14,41 @@ class EmpGetDetailsScreen extends StatefulWidget {
   State<EmpGetDetailsScreen> createState() => _EmpGetDetailsScreenState();
 }
 
-class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> with WidgetsBindingObserver {
+class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
   String? gender;
   bool termsAccepted = false;
+  File? profileImage;
+  String? documentPath;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController dobController = TextEditingController();
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
   final TextEditingController phoneNumberController = TextEditingController();
-  final FocusNode phoneFocusNode = FocusNode();
 
-  File? idProofFile;
-  File? profilePhotoFile;
+  final ImagePicker _picker = ImagePicker(); // Initialize image picker
 
-  final ImagePicker _picker = ImagePicker();
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
+  Future<void> _takeProfilePicture() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front, // Open front camera only
+    );
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    dobController.dispose();
-    firstNameController.dispose();
-    lastNameController.dispose();
-    phoneNumberController.dispose();
-    phoneFocusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
-      _deleteUserIfNotCompleted();
+    if (pickedFile != null) {
+      setState(() {
+        profileImage = File(pickedFile.path);
+      });
     }
   }
 
-  Future<void> _deleteUserIfNotCompleted() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? userId = prefs.getString('uid');
-    if (userId != null &&
-        firstNameController.text.isEmpty &&
-        lastNameController.text.isEmpty &&
-        phoneNumberController.text.isEmpty) {
-      await FirebaseAuth.instance.currentUser?.delete();
-      await FirebaseFirestore.instance.collection('users').doc(userId).delete();
+  Future<void> _pickDocument() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['pdf', 'docx', 'jpg', 'png', 'jpeg']);
+    if (result != null) {
+      setState(() {
+        documentPath = result.files.single.path;
+      });
     }
-  }
-
-  Future<void> _pickFile(bool isProfilePhoto) async {
-    final XFile? pickedFile = await _picker.pickImage(source: isProfilePhoto ? ImageSource.camera : ImageSource.gallery);
-    setState(() {
-      if (pickedFile != null) {
-        if (isProfilePhoto) {
-          profilePhotoFile = File(pickedFile.path);
-        } else {
-          idProofFile = File(pickedFile.path);
-        }
-      }
-    });
   }
 
   @override
@@ -123,7 +95,6 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> with WidgetsB
                     icon: Icons.phone_android_outlined,
                     controller: phoneNumberController,
                     keyboardType: TextInputType.phone,
-                    focusNode: phoneFocusNode,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return "Phone number cannot be empty";
@@ -171,8 +142,8 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> with WidgetsB
                         value: termsAccepted,
                         onChanged: (value) => setState(() => termsAccepted = value!),
                       ),
-                      Expanded(
-                        child: const Text(
+                      const Expanded(
+                        child: Text(
                           "By checking the box you agree to our terms and conditions.",
                           style: TextStyle(fontSize: 12),
                         ),
@@ -180,21 +151,23 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> with WidgetsB
                     ],
                   ),
                   const SizedBox(height: 20),
-                  CustomTextField(
-                    hintText: "Please select ID proof as you are Indian",
-                    icon: Icons.file_upload_outlined,
-                    controller: TextEditingController(),
-                    readOnly: true,
-                    onTap: () => _pickFile(false),
+                  ElevatedButton(
+                    onPressed: _takeProfilePicture,
+                    child: Text(profileImage == null ? "Take Profile Picture" : "Profile Picture Taken"),
                   ),
-                  const SizedBox(height: 10),
-                  CustomTextField(
-                    hintText: "Please select upload by clicking image for profile photo",
-                    icon: Icons.camera_alt_outlined,
-                    controller: TextEditingController(),
-                    readOnly: true,
-                    onTap: () => _pickFile(true),
+                  if (profileImage != null) ...[
+                    const SizedBox(height: 10),
+                    Image.file(profileImage!, height: 100, width: 100, fit: BoxFit.cover),
+                  ],
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _pickDocument,
+                    child: Text(documentPath == null ? "Upload Document" : "Document Uploaded"),
                   ),
+                  if (documentPath != null) ...[
+                    const SizedBox(height: 10),
+                    Text("Document: $documentPath"),
+                  ],
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
@@ -215,8 +188,6 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> with WidgetsB
                                 'dob': dobController.text,
                                 'gender': gender,
                                 'phoneNumber': phoneNumberController.text,
-                                'idProof': idProofFile?.path,
-                                'profilePhoto': profilePhotoFile?.path,
                               }, SetOptions(merge: true));
 
                               Navigator.pushReplacement(
@@ -252,40 +223,28 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> with WidgetsB
 class CustomTextField extends StatelessWidget {
   final String hintText;
   final IconData icon;
-  final TextEditingController? controller;
+  final TextEditingController controller;
   final TextInputType? keyboardType;
   final String? Function(String?)? validator;
-  final FocusNode? focusNode;
-  final bool readOnly;
-  final void Function()? onTap;
 
   const CustomTextField({
-    super.key,
     required this.hintText,
     required this.icon,
-    this.controller,
+    required this.controller,
     this.keyboardType,
     this.validator,
-    this.focusNode,
-    this.readOnly = false,
-    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        validator: validator,
-        focusNode: focusNode,
-        readOnly: readOnly,
-        decoration: InputDecoration(
-          hintText: hintText,
-          prefixIcon: Icon(icon, color: Colors.orange),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        ),
+    return TextFormField(
+      controller: controller,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: Icon(icon),
+        border: const OutlineInputBorder(),
       ),
     );
   }
@@ -293,11 +252,10 @@ class CustomTextField extends StatelessWidget {
 
 class GenderSelector extends StatelessWidget {
   final String? selectedGender;
-  final void Function(String?) onChanged;
+  final ValueChanged<String?> onChanged;
 
   const GenderSelector({
-    super.key,
-    this.selectedGender,
+    required this.selectedGender,
     required this.onChanged,
   });
 
@@ -307,31 +265,42 @@ class GenderSelector extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Gender",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          "Select your gender",
+          style: TextStyle(fontSize: 14, color: Colors.black87),
         ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Radio<String>(
-              value: 'Male',
-              groupValue: selectedGender,
-              onChanged: onChanged,
-            ),
-            const Text("Male"),
-            Radio<String>(
-              value: 'Female',
-              groupValue: selectedGender,
-              onChanged: onChanged,
-            ),
-            const Text("Female"),
-            Radio<String>(
-              value: 'Other',
-              groupValue: selectedGender,
-              onChanged: onChanged,
-            ),
-            const Text("Other"),
+            RadioOption(value: "male", groupValue: selectedGender, label: "Male", onChanged: onChanged),
+            RadioOption(value: "female", groupValue: selectedGender, label: "Female", onChanged: onChanged),
+            RadioOption(value: "other", groupValue: selectedGender, label: "Other", onChanged: onChanged),
           ],
         ),
+      ],
+    );
+  }
+
+}
+
+class RadioOption extends StatelessWidget {
+  final String value;
+  final String? groupValue;
+  final String label;
+  final void Function(String?) onChanged;
+
+  const RadioOption({
+    super.key,
+    required this.value,
+    required this.groupValue,
+    required this.label,
+    required this.onChanged,
+  });
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Radio<String>(value: value, groupValue: groupValue, onChanged: onChanged),
+        Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
   }

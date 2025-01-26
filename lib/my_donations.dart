@@ -1,20 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
+class MyDonationsPage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: MyDonationsPage(),
-    );
-  }
+  _MyDonationsPageState createState() => _MyDonationsPageState();
 }
 
-class MyDonationsPage extends StatelessWidget {
+class _MyDonationsPageState extends State<MyDonationsPage> {
+  String userId = "";
+  List<Donation> donations = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserId();
+  }
+
+  // Fetch userId from SharedPreferences
+  _loadUserId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString('uid') ?? '';
+    });
+    if (userId.isNotEmpty) {
+      _fetchDonations();
+    }
+  }
+
+  // Fetch donations from Firestore for the given userId
+  _fetchDonations() async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    final userDonationsSnapshot = await firestore
+        .collection('Donations')
+        .doc(userId)
+        .collection('UserDonations')
+        .get();
+
+    List<Donation> donationsList = [];
+    for (var doc in userDonationsSnapshot.docs) {
+      var donationData = doc.data();
+      // Wait for the donation to be fetched with user data
+      Donation donation = await Donation.fromFirestore(doc.id, donationData);
+      donationsList.add(donation);
+    }
+
+    setState(() {
+      donations = donationsList;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +70,24 @@ class MyDonationsPage extends StatelessWidget {
       ),
       body: Stack(
         children: [
-          buildBody(),
+          donations.isEmpty
+              ? Center(child: CircularProgressIndicator())
+              : Padding(
+            padding: const EdgeInsets.all(16.0), // Add padding around the entire ListView
+            child: ListView.builder(
+              itemCount: donations.length,
+              itemBuilder: (context, index) {
+                var donation = donations[index];
+                return DonationCard(
+                  name: donation.name,
+                  donationId: donation.donationId,
+                  description: donation.description,
+                  location: donation.city,
+                  status: donation.status,
+                );
+              },
+            ),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: CustomBottomNavigationBar(),
@@ -43,24 +96,171 @@ class MyDonationsPage extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget buildBody() {
-    return SingleChildScrollView(
+class DonationCard extends StatelessWidget {
+  final String name;
+  final String donationId;
+  final String description;
+  final String location;
+  final String status;
+
+  const DonationCard({
+    required this.name,
+    required this.donationId,
+    required this.description,
+    required this.location,
+    required this.status,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor;
+    Color borderColor;
+
+    // Set color based on status
+    if (status == 'Pending') {
+      statusColor = Colors.orange;
+      borderColor = Colors.orange[100]!;
+    } else if (status == 'Approved') {
+      statusColor = Colors.green;
+      borderColor = Colors.green[100]!;
+    } else {
+      statusColor = Colors.grey;
+      borderColor = Colors.grey[100]!;
+    }
+
+    return Card(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      elevation: 2,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+        child: Row(
           children: [
-            DonationCard(
-              name: "SOHAM NARSINHA DALVI",
-              description: "Feed 10 HungryOnes",
-              location: "Dahisar East",
-              donations: 5,
-              status: "COMPLETED",
-            ),
-            // Add more cards here if needed
+            buildIconBox(),
+            SizedBox(width: 16),
+            buildCardContent(statusColor, borderColor),
           ],
         ),
       ),
+    );
+  }
+
+  Widget buildIconBox() {
+    return Container(
+      width: 90,
+      height: 90,
+      decoration: BoxDecoration(
+        color: Colors.blue,
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+    );
+  }
+
+  Widget buildCardContent(Color statusColor, Color borderColor) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: TextStyle(
+              fontSize: 13.2,
+              fontWeight: FontWeight.w600,
+              fontFamily: "cerapro",
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            donationId,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+              fontFamily: "cerapro",
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            description,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.black87,
+              fontFamily: "cerapro",
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            location,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey,
+              fontFamily: "cerapro",
+            ),
+          ),
+          SizedBox(height: 4),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: borderColor,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: statusColor,
+                width: 1.0,
+              ),
+            ),
+            child: Text(
+              status,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: statusColor,
+                fontFamily: "cerapro",
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Donation {
+  final String name;
+  final String donationId;
+  final String description;
+  final String city;
+  final String status;
+
+  Donation({
+    required this.name,
+    required this.donationId,
+    required this.description,
+    required this.city,
+    required this.status,
+  });
+
+  // Convert Firestore data to Donation object
+  static Future<Donation> fromFirestore(String donationId, Map<String, dynamic> data) async {
+    String userId = data['userID'];
+    String description = 'For ${data['NumberOfServing']} Hungry Ones';
+    String city = 'From ${data['City']} ' ?? '';
+    String status = data['status'] ?? 'Pending';
+
+    // Fetch user name from Users collection
+    var userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    String firstName = userDoc['firstName'] ?? 'Unknown';
+    String lastName = userDoc['lastName'] ?? 'Unknown';
+    String name = '$firstName $lastName';
+
+    return Donation(
+      name: name,
+      donationId: donationId,
+      description: description,
+      city: city,
+      status: status,
     );
   }
 }
@@ -69,6 +269,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      alignment: Alignment.bottomCenter,
       width: 300.0, // Adjust width of the bottom navigation bar
       height: 70.0, // Adjust height to fit icons and labels
       margin: EdgeInsets.only(bottom: 12.0),
@@ -191,111 +392,6 @@ class CustomBottomNavigationBar extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class DonationCard extends StatelessWidget {
-  final String name;
-  final String description;
-  final String location;
-  final int donations;
-  final String status;
-
-  const DonationCard({
-    required this.name,
-    required this.description,
-    required this.location,
-    required this.donations,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            buildIconBox(),
-            SizedBox(width: 16),
-            buildCardContent(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget buildIconBox() {
-    return Container(
-      width: 90,
-      height: 90,
-      decoration: BoxDecoration(
-        color: Colors.blue,
-        borderRadius: BorderRadius.circular(10.0),
-      ),
-    );
-  }
-
-  Widget buildCardContent() {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 13.2,
-              fontWeight: FontWeight.w600,
-              fontFamily: "cerapro",
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            description,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.black87,
-              fontFamily: "cerapro",
-            ),
-          ),
-          SizedBox(height: 4),
-          Text(
-            "In $donations Donations, from $location",
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey,
-              fontFamily: "cerapro",
-            ),
-          ),
-          SizedBox(height: 4),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Color.fromARGB(230, 246, 233, 233),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: Colors.green,
-                width: 1.0,
-              ),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.green,
-                fontFamily: "cerapro",
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
