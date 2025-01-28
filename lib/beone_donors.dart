@@ -5,28 +5,35 @@ class BeOneDonors extends StatelessWidget {
   Future<List<Map<String, dynamic>>> fetchCompletedDonations() async {
     List<Map<String, dynamic>> completedDonations = [];
 
-    // Get all documents from the Donations collection (user IDs)
+    // Get all user documents from the 'Donations' collection
     QuerySnapshot donationsSnapshot =
-    await FirebaseFirestore.instance.collection('Donations').get();
+    await FirebaseFirestore.instance.collection('users').get();
 
-    // Iterate over each donation document
+    // Iterate over each user's document in 'Donations'
     for (var donationDoc in donationsSnapshot.docs) {
       String userId = donationDoc.id;
-      print('Checking User ID: $userId');
 
+      // Access the 'UserDonations' subcollection for the current user
       QuerySnapshot userDonationsSnapshot = await FirebaseFirestore.instance
           .collection('Donations')
           .doc(userId)
           .collection('UserDonations')
-          .where('status', isEqualTo: "Completed")
+          .where('status', isEqualTo: 'Completed') // Filter by status
           .get();
 
-      print('User ID: $userId, Completed Donations Found: ${userDonationsSnapshot.docs.length}');
+      // Check if donations are found and print for debugging
+      if (userDonationsSnapshot.docs.isNotEmpty) {
+        print('User $userId has completed donations.');
+
+        // Add each completed donation document to the list
+        for (var userDonation in userDonationsSnapshot.docs) {
+          completedDonations.add(userDonation.data() as Map<String, dynamic>);
+        }
+      } else {
+        print('No completed donations for user $userId.');
+      }
     }
-
-    // Log the completed donations for debugging
     print('Completed Donations: $completedDonations');
-
     return completedDonations;
   }
 
