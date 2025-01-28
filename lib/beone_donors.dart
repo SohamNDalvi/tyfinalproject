@@ -7,17 +7,18 @@ class BeOneDonors extends StatelessWidget {
 
     // Get all user documents from the 'Donations' collection
     QuerySnapshot donationsSnapshot =
-    await FirebaseFirestore.instance.collection('users').get();
-
+    await FirebaseFirestore.instance.collection('Donations').get();
+    print(" hhhh :$donationsSnapshot.docs");
+  print(donationsSnapshot.docs.length);
     // Iterate over each user's document in 'Donations'
     for (var donationDoc in donationsSnapshot.docs) {
       String userId = donationDoc.id;
-
+      print(donationDoc.data());
       // Access the 'UserDonations' subcollection for the current user
       QuerySnapshot userDonationsSnapshot = await FirebaseFirestore.instance
           .collection('Donations')
           .doc(userId)
-          .collection('UserDonations')
+          .collection('userDonations')
           .where('status', isEqualTo: 'Completed') // Filter by status
           .get();
 
@@ -33,6 +34,7 @@ class BeOneDonors extends StatelessWidget {
         print('No completed donations for user $userId.');
       }
     }
+
     print('Completed Donations: $completedDonations');
     return completedDonations;
   }

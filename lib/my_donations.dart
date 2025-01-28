@@ -35,7 +35,7 @@ class _MyDonationsPageState extends State<MyDonationsPage> {
     final userDonationsSnapshot = await firestore
         .collection('Donations')
         .doc(userId)
-        .collection('UserDonations')
+        .collection('userDonations')
         .get();
 
     List<Donation> donationsList = [];

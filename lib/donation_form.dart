@@ -201,8 +201,7 @@ class _DonationFormState extends State<DonationForm> {
       'PickUpDate': _dateController.text,
       'PickUpTimeSlot': _timeController.text,
       'FoodCategory': _categoryController.text,
-      'SpecialInstruction':
-      _instructionsController.text.isEmpty ? ' ' : _instructionsController.text,
+      'SpecialInstruction': _instructionsController.text.isEmpty ? ' ' : _instructionsController.text,
       'NumberOfServing': _servingsController.text,
       'Quantity': _quantityController.text,
       'FoodCategory': _selectedCategory,
@@ -215,13 +214,17 @@ class _DonationFormState extends State<DonationForm> {
     };
 
     try {
-      // Add the donation data to Firestore under UserID -> UserDonations -> donationID
-      await FirebaseFirestore.instance
-          .collection('Donations')
-          .doc(userId)
-          .collection('UserDonations')
-          .doc(donationId)
-          .set(donationData);
+      // Reference the parent document in the 'Donations' collection
+      DocumentReference userDoc = FirebaseFirestore.instance.collection('Donations').doc(userId);
+      await userDoc.set({
+        'createdAt': FieldValue.serverTimestamp(), // Timestamp when the document was created
+      }, SetOptions(merge: true)); // Merge to avoid overwriting if the document already exists
+
+      // Add data to the subcollection 'userDonations2', using donationId as document ID
+      await userDoc.collection('userDonations').doc(donationId).set(donationData);
+
+      // Log success message to the console
+      print('Donation data added successfully!');
 
       // Show success popup
       showDialog(
