@@ -40,6 +40,7 @@ class _DonationFormState extends State<DonationForm> {
 
   String _selectedCategory = 'Select';
   String _selectedFoodType = 'VEG';
+  String _selectedUnit = 'kg';
 
   Future<DateTime?> _selectDate(BuildContext context) async {
     DateTime now = DateTime.now();
@@ -187,6 +188,14 @@ class _DonationFormState extends State<DonationForm> {
 
     // Generate a unique donation ID using the userId and the current date and time
     String donationId = '$userId-${DateTime.now().toIso8601String()}';
+    final int servings = int.tryParse(_servingsController.text)!;
+    final String quantity = _quantityController.text;
+    final int? quantityValue = int.tryParse(quantity);
+    String formattedQuantity = '';
+
+    if (quantityValue != null) {
+      formattedQuantity = '$quantityValue $_selectedUnit'; // Format as "300 kg" or "200 g"
+    }
 
     // Create a donation data map
     Map<String, dynamic> donationData = {
@@ -202,8 +211,8 @@ class _DonationFormState extends State<DonationForm> {
       'PickUpTimeSlot': _timeController.text,
       'FoodCategory': _categoryController.text,
       'SpecialInstruction': _instructionsController.text.isEmpty ? ' ' : _instructionsController.text,
-      'NumberOfServing': _servingsController.text,
-      'Quantity': _quantityController.text,
+      'NumberOfServing': servings,
+      'Quantity': formattedQuantity,
       'FoodCategory': _selectedCategory,
       'IngredientUsed': _ingredientsController.text,
       'FoodCondition': _conditionController.text.isEmpty ? ' ' : _conditionController.text,
@@ -317,7 +326,7 @@ class _DonationFormState extends State<DonationForm> {
             style: TextStyle(fontSize: 12, color: Colors.grey),
           ),
         ),
-        SizedBox(height: 16.0),
+        SizedBox(height: 20.0),
       ],
     );
   }
@@ -509,8 +518,27 @@ class _DonationFormState extends State<DonationForm> {
                   label: "Number of servings (Approx)",
                   controller: _servingsController,
                   example: "Example: 20",
-                  validator: (value) =>
-                  value == null || value.isEmpty ? "Number of servings is required." : null,
+                  validator: (value) {
+                    // Check if the value is null or empty
+                    if (value == null || value.isEmpty) {
+                      return "Number of servings is required.";
+                    }
+
+                    // Try parsing the value as an integer
+                    int? servings = int.tryParse(value);
+                    if (servings == null) {
+                      return "Please enter a valid number.";
+                    }
+
+                    // Check if the servings number is greater than 0
+                    if (servings <= 0) {
+                      return "Number of servings must be greater than 0.";
+                    }
+
+                    // If validation passes
+                    return null;
+                  },
+
                   onTap: () async {
                     bool isLoggedIn = await _isUserLoggedIn();
                     if (!isLoggedIn) {
@@ -518,19 +546,75 @@ class _DonationFormState extends State<DonationForm> {
                     }
                   },
                 ),
-                buildFieldWithExample(
-                  label: "Quantity (Approx)",
-                  controller: _quantityController,
-                  example: "Example: 5kg,200g",
-                  validator: (value) =>
-                  value == null || value.isEmpty ? "Quantity is required." : null,
-                  onTap: () async {
-                    bool isLoggedIn = await _isUserLoggedIn();
-                    if (!isLoggedIn) {
-                      _showLoginDialog(context);
-                    }
-                  },
+
+// Stack to combine TextField and DropdownButton
+                Stack(
+                  children: [
+                    // TextFormField for quantity input with validation and styling
+                    buildFieldWithExample(
+                      label: "Quantity (Approx)",
+                      example: "2kg ,300g",
+                      controller: _quantityController,
+                      maxLines: 1,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return "Quantity is required.";
+                        }
+
+                        int? quantity = int.tryParse(value);
+                        if (quantity == null) {
+                          return "Please enter a valid number.";
+                        }
+
+                        if (_selectedUnit == 'g' && quantity < 200) {
+                          return "Quantity must be greater than 200g.";
+                        }
+
+                        return null; // Return null if input is valid
+                      },
+                      onTap: () async {
+                        bool isLoggedIn = await _isUserLoggedIn();
+                        if (!isLoggedIn) {
+                          _showLoginDialog(context);
+                        }
+                      },
+                    ),
+
+                    // Positioned DropdownButton inside the text field
+                    Positioned(
+                      right: 12, // Move slightly inside the text field
+                      top: 4, // Adjust vertical alignment
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white, // Ensure dropdown blends well with the field
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedUnit,
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedUnit = newValue!;
+                              });
+                            },
+                            items: <String>['kg', 'g'].map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                  child: Text(value),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
+
+                SizedBox(height: 16.0),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

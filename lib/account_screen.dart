@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'user_login_page.dart';
 import 'support_page.dart';
 
@@ -14,9 +16,21 @@ class AccountScreen extends StatefulWidget {
 Future<void> _logout(BuildContext context) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   await prefs.remove('uid');  // Clear the stored user ID
+
+  // Check if the user is signed in with Google
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  if (await googleSignIn.isSignedIn()) {
+    // Sign out from Google
+    await googleSignIn.signOut();
+  }
+
+  // Sign out from Firebase Authentication
+  await FirebaseAuth.instance.signOut();
+
+  // Navigate to the UserLoginPage
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (context) => UserLoginPage()),  // Navigate to UserLoginPage
+    MaterialPageRoute(builder: (context) => UserLoginPage()),  // Navigate to login screen
   );
 }
 

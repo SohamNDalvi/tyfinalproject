@@ -4,7 +4,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'home_screen.dart';
+import 'forgot_password_page.dart';
+import 'User_get_details.dart';
 import 'otp_validation_screen.dart';
 import 'emp_login_page.dart';
 import 'user_signup_page.dart';
@@ -19,8 +22,84 @@ class UserLoginPage extends StatefulWidget {
 class _UserLoginPageState extends State<UserLoginPage> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   String? errorMessage; // Holds the error message
   bool _obscurePassword = true;
+
+  Future<void> signInWithGoogle() async {
+    try {
+      // Start Google Sign-In process
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User canceled the Google sign-in
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth =
+      await googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with Google credentials
+      UserCredential userCredential =
+      await FirebaseAuth.instance.signInWithCredential(credential);
+
+      String uid = userCredential.user!.uid;
+      String? userEmail = userCredential.user!.email;
+
+      // Store UID in SharedPreferences
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('uid', uid);
+      print("Saved UID: $uid");
+
+      // Fetch user data from Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
+
+      if (userDoc.exists) {
+        String userType = userDoc['UserType'];
+        if (userType == 'user') {
+          // Navigate to HomeScreen if user is found
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => HomeScreen()),
+          );
+        } else {
+          setState(() {
+            errorMessage =
+            "Your email is registered as an employee. Please log in with a user's email.";
+          });
+        }
+      } else {
+        // If user is not in Firestore, create a new entry
+        await FirebaseFirestore.instance.collection('users').doc(uid).set({
+          'email': userEmail,
+          'UserType': 'user', // Default role
+          // Add more fields if necessary (e.g., name, profile picture)
+        });
+
+        // Navigate to User Details Screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => UserGetDetailsScreen()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        errorMessage = e.message;
+      });
+    } catch (e) {
+      setState(() {
+        errorMessage = "An unexpected error occurred. Please try again.";
+      });
+    }
+  }
+
 
   Future<void> validateEmail() async {
     String email = emailController.text.trim();
@@ -43,49 +122,77 @@ class _UserLoginPageState extends State<UserLoginPage> {
     }
 
     try {
-      // Sign in the user
-      UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithEmailAndPassword(email: email, password: password);
-      String uid = userCredential.user!.uid;
+      // 🔹 First, check if the email exists in Firestore
+      QuerySnapshot userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
 
-      // Store UID in SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('uid', uid);
-      String? savedUid = prefs.getString('uid');
-      print("Saved UID: $savedUid");
-
-      // Fetch user data from Firestore
-      DocumentSnapshot userDoc =
-      await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-      if (userDoc.exists) {
-        String userType = userDoc['UserType'];
-        if (userType == 'user') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
-          );
-        } else {
-          setState(() {
-            errorMessage =
-            "Your email ID is registered as an employee. Please log in with a user's email ID.";
-          });
-        }
-      } else {
+      if (userQuery.docs.isEmpty) {
         setState(() {
           errorMessage = "User not found. Please check your credentials.";
         });
+        return;
       }
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        errorMessage = e.message;
-      });
+
+      // 🔹 Try to sign in with email & password
+      try {
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(email: email, password: password);
+
+        String uid = userCredential.user!.uid;
+
+        // Store UID in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('uid', uid);
+        String? savedUid = prefs.getString('uid');
+        print("Saved UID: $savedUid");
+
+        // Fetch user data from Firestore
+        DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+        if (userDoc.exists) {
+          String userType = userDoc['UserType'];
+          if (userType == 'user') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HomeScreen()),
+            );
+          } else {
+            setState(() {
+              errorMessage =
+              "Your email ID is registered as an employee. Please log in with a user's email ID.";
+            });
+          }
+        } else {
+          setState(() {
+            errorMessage = "User not found. Please check your credentials.";
+          });
+        }
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'invalid-credential') {
+          // If the email is registered with Google, show the appropriate message
+          setState(() {
+            errorMessage =
+            "Incorrect password. Please check your credentials or This email is registered with Google Sign-In. Try sign in using Google.";
+          });
+        } else {
+          setState(() {
+            errorMessage = e.message!;
+            print("Firebase Error: ${e.code}");
+          });
+        }
+      }
     } catch (e) {
       setState(() {
         errorMessage = "An unexpected error occurred. Please try again.";
       });
     }
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -280,14 +387,20 @@ class _UserLoginPageState extends State<UserLoginPage> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                              );
+                            },
                             child: const Text(
                               "Forgot Password?",
                               style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.orange,
-                                  fontFamily: 'cerapro',
-                                  fontWeight: FontWeight.w600),
+                                fontSize: 12,
+                                color: Colors.orange,
+                                fontFamily: 'cerapro',
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
@@ -344,7 +457,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
 
                         const SizedBox(height: 5),
                         OutlinedButton.icon(
-                          onPressed: () {},
+                          onPressed: ( signInWithGoogle),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Colors.orange),
                             padding: const EdgeInsets.symmetric(vertical: 9),

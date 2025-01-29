@@ -121,11 +121,24 @@ class _UserGetDetailsScreenState extends State<UserGetDetailsScreen> with Widget
                         context: context,
                         initialDate: DateTime.now(),
                         firstDate: DateTime(1900),
-                        lastDate: DateTime(2100),
+                        lastDate: DateTime.now(),
                       );
+
                       if (pickedDate != null) {
-                        dobController.text =
-                        "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                        DateTime today = DateTime.now();
+                        int age = today.year - pickedDate.year;
+
+                        if (pickedDate.month > today.month || (pickedDate.month == today.month && pickedDate.day > today.day)) {
+                          age--; // Adjust age if birthday hasn't occurred yet this year
+                        }
+
+                        if (age < 14) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("You must be at least 14 years old.")),
+                          );
+                        } else {
+                          dobController.text = "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                        }
                       }
                     },
                     child: AbsorbPointer(
@@ -138,6 +151,7 @@ class _UserGetDetailsScreenState extends State<UserGetDetailsScreen> with Widget
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
                   GenderSelector(
                     selectedGender: gender,

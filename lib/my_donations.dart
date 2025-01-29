@@ -71,9 +71,18 @@ class _MyDonationsPageState extends State<MyDonationsPage> {
       body: Stack(
         children: [
           donations.isEmpty
-              ? Center(child: CircularProgressIndicator())
+              ? Center(
+            child: Text(
+              "Donations Not done yet",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          )
               : Padding(
-            padding: const EdgeInsets.all(16.0), // Add padding around the entire ListView
+            padding: const EdgeInsets.all(16.0),
             child: ListView.builder(
               itemCount: donations.length,
               itemBuilder: (context, index) {

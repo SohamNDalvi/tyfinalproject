@@ -1,47 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class BeOneDonors extends StatelessWidget {
-  Future<List<Map<String, dynamic>>> fetchCompletedDonations() async {
-    List<Map<String, dynamic>> completedDonations = [];
+class BeOneDonors extends StatefulWidget {
+  @override
+  _BeOneDonorsState createState() => _BeOneDonorsState();
+}
 
-    // Get all user documents from the 'Donations' collection
-    QuerySnapshot donationsSnapshot =
-    await FirebaseFirestore.instance.collection('Donations').get();
-    print(" hhhh :$donationsSnapshot.docs");
-  print(donationsSnapshot.docs.length);
-    // Iterate over each user's document in 'Donations'
+class _BeOneDonorsState extends State<BeOneDonors> {
+  List<Map<String, dynamic>> donorsList = [];
+  bool sortDescending = true; // Sort order: true = highest first, false = lowest first
+  String searchQuery = "";
+
+  @override
+  void initState() {
+    super.initState();
+    print("initState called");
+    fetchCompletedDonations();
+  }
+
+  Future<void> fetchCompletedDonations() async {
+    List<Map<String, dynamic>> tempDonorsList = [];
+    DateTime now = DateTime.now();
+    String currentMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}"; // Format YYYY-MM
+
+    // Get all user documents from 'Donations' collection
+    QuerySnapshot donationsSnapshot = await FirebaseFirestore.instance.collection('Donations').get();
+
     for (var donationDoc in donationsSnapshot.docs) {
       String userId = donationDoc.id;
-      print(donationDoc.data());
-      // Access the 'UserDonations' subcollection for the current user
+
+      // Fetch completed donations for the user in the current month
       QuerySnapshot userDonationsSnapshot = await FirebaseFirestore.instance
           .collection('Donations')
           .doc(userId)
           .collection('userDonations')
-          .where('status', isEqualTo: 'Completed') // Filter by status
+          .where('status', isEqualTo: 'Completed')
           .get();
 
-      // Check if donations are found and print for debugging
-      if (userDonationsSnapshot.docs.isNotEmpty) {
-        print('User $userId has completed donations.');
+      int totalServings = 0;
+      int totalDonations = 0;
+      String donorName = "Unknown";
+      String city = "Unknown";
 
-        // Add each completed donation document to the list
-        for (var userDonation in userDonationsSnapshot.docs) {
-          completedDonations.add(userDonation.data() as Map<String, dynamic>);
+      for (var doc in userDonationsSnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+
+        Timestamp? timestamp = data['createdAt'] as Timestamp?;
+        if (timestamp != null) {
+          DateTime donationDate = timestamp.toDate(); // Convert Firestore Timestamp to DateTime
+          String formattedDate = "${donationDate.year}-${donationDate.month.toString().padLeft(2, '0')}";
+
+          if (formattedDate == currentMonth) { // Compare formatted date with current month
+            totalServings += (data['NumberOfServing'] ?? 0) as int;
+            totalDonations++;
+          }
         }
-      } else {
-        print('No completed donations for user $userId.');
+
+        donorName = data['Name'] ?? donorName;
+        city = data['City'] ?? city;
+      }
+
+      if (totalDonations > 0) {
+        tempDonorsList.add({
+          'Name': donorName,
+          'TotalServings': totalServings,
+          'TotalDonations': totalDonations,
+          'City': city,
+        });
       }
     }
 
-    print('Completed Donations: $completedDonations');
-    return completedDonations;
-  }
+    // Sort based on servings (highest first)
+    tempDonorsList.sort((a, b) => sortDescending
+        ? b['TotalServings'].compareTo(a['TotalServings'])
+        : a['TotalServings'].compareTo(b['TotalServings']));
 
+    setState(() {
+      donorsList = tempDonorsList;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> filteredList = donorsList
+        .where((donor) => donor['Name'].toLowerCase().contains(searchQuery.toLowerCase()))
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -64,22 +108,59 @@ class BeOneDonors extends StatelessWidget {
         ),
       ),
       body: SafeArea(
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: fetchCompletedDonations(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error loading donations"));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(child: Text("No completed donations found"));
-            }
+        child: Column(
+          children: [
+            // Search Bar
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Search donor by name...",
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                },
+              ),
+            ),
 
-            final donations = snapshot.data!;
-            return SingleChildScrollView(
-              padding: EdgeInsets.symmetric(horizontal: 16.0),
-              child: Column(
-                children: donations.map((donation) {
+            // Sorting Button
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Sort by servings",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  IconButton(
+                    icon: Icon(sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
+                    onPressed: () {
+                      setState(() {
+                        sortDescending = !sortDescending;
+                        donorsList.sort((a, b) => sortDescending
+                            ? b['TotalServings'].compareTo(a['TotalServings'])
+                            : a['TotalServings'].compareTo(b['TotalServings']));
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            // List of Donors
+            Expanded(
+              child: filteredList.isEmpty
+                  ? Center(child: Text("No completed donations found"))
+                  : ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                itemCount: filteredList.length,
+                itemBuilder: (context, index) {
+                  var donation = filteredList[index];
                   return Card(
                     color: Colors.white,
                     shape: RoundedRectangleBorder(
@@ -102,27 +183,24 @@ class BeOneDonors extends StatelessWidget {
                             ),
                           ),
                           SizedBox(width: 16.0),
+
                           // Text details
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      bottom: 20.0, top: 16.0),
-                                  child: Text(
-                                    donation['Address'] ?? 'Unknown Address',
-                                    style: TextStyle(
-                                      fontFamily: 'cerapro',
-                                      fontSize: 13.2,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey.shade700,
-                                    ),
+                                Text(
+                                  donation['Name'],
+                                  style: TextStyle(
+                                    fontFamily: 'cerapro',
+                                    fontSize: 13.2,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey.shade700,
                                   ),
                                 ),
                                 SizedBox(height: 4.0),
                                 Text(
-                                  "${donation['NumberOfServing']} Servings",
+                                  "For ${donation['TotalServings']} Hungry Ones",
                                   style: TextStyle(
                                     fontFamily: 'cerapro',
                                     fontSize: 12.0,
@@ -132,7 +210,17 @@ class BeOneDonors extends StatelessWidget {
                                 ),
                                 SizedBox(height: 4.0),
                                 Text(
-                                  "Category: ${donation['FoodCategory'] ?? 'Unknown'}",
+                                  "In ${donation['TotalDonations']} Donations",
+                                  style: TextStyle(
+                                    fontFamily: 'cerapro',
+                                    fontSize: 12.0,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                SizedBox(height: 4.0),
+                                Text(
+                                  "From ${donation['City']}",
                                   style: TextStyle(
                                     fontFamily: 'cerapro',
                                     fontSize: 10.0,
@@ -147,10 +235,10 @@ class BeOneDonors extends StatelessWidget {
                       ),
                     ),
                   );
-                }).toList(),
+                },
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );
