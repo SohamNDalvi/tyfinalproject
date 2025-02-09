@@ -281,29 +281,7 @@ class _UserSignupPage extends State<UserSignupPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                        OutlinedButton.icon(
-                          onPressed: () {},
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: Colors.orange),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          icon: SvgPicture.asset(
-                            'assets/google_icon.svg',
-                            width: 20,
-                            height: 20,
-                          ),
-                          label: const Text(
-                            "Continue with Google",
-                            style: TextStyle(
-                              fontFamily: 'cerapro',
-                              fontSize: 16,
-                              color: Colors.orange,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+
                       ],
                     ),
                   ),

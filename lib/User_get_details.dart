@@ -184,16 +184,15 @@ class _UserGetDetailsScreenState extends State<UserGetDetailsScreen> with Widget
                             String? userId = prefs.getString('uid');
 
                             if (userId != null) {
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(userId)
-                                  .set({
-                                'firstName': firstNameController.text,
-                                'lastName': lastNameController.text,
-                                'dob': dobController.text,
-                                'gender': gender,
-                                'phoneNumber': phoneNumberController.text,
-                              }, SetOptions(merge: true));
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+    'firstName': firstNameController.text,
+    'lastName': lastNameController.text,
+    'dob': dobController.text,
+    'gender': gender,
+    'phoneNumber': phoneNumberController.text,
+    'userType': 'user', // Explicitly setting the userType to 'user'
+    }, SetOptions(merge: true));
+
 
                               Navigator.pushReplacement(
                                 context,

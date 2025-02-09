@@ -8,7 +8,7 @@ class BeOneDonors extends StatefulWidget {
 
 class _BeOneDonorsState extends State<BeOneDonors> {
   List<Map<String, dynamic>> donorsList = [];
-  bool sortDescending = true; // Sort order: true = highest first, false = lowest first
+  bool sortDescending = true;
   String searchQuery = "";
 
   @override
@@ -23,67 +23,75 @@ class _BeOneDonorsState extends State<BeOneDonors> {
     DateTime now = DateTime.now();
     String currentMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}"; // Format YYYY-MM
 
-    // Get all user documents from 'Donations' collection
-    QuerySnapshot donationsSnapshot = await FirebaseFirestore.instance.collection('Donations').get();
+    try {
+      QuerySnapshot donationsSnapshot =
+      await FirebaseFirestore.instance.collection('Donations').get();
 
-    for (var donationDoc in donationsSnapshot.docs) {
-      String userId = donationDoc.id;
+      for (var donationDoc in donationsSnapshot.docs) {
+        String userId = donationDoc.reference.id;
+        print("User donation ID for debug: $userId");
 
-      // Fetch completed donations for the user in the current month
-      QuerySnapshot userDonationsSnapshot = await FirebaseFirestore.instance
-          .collection('Donations')
-          .doc(userId)
-          .collection('userDonations')
-          .where('status', isEqualTo: 'Completed')
-          .get();
+        QuerySnapshot userDonationsSnapshot = await FirebaseFirestore.instance
+            .collection('Donations')
+            .doc(userId)
+            .collection('userDonations')
+            .where('status', isEqualTo: 'Completed')
+            .get();
 
-      int totalServings = 0;
-      int totalDonations = 0;
-      String donorName = "Unknown";
-      String city = "Unknown";
+        int totalServings = 0;
+        int totalDonations = 0;
+        String donorName = "Unknown";
+        String city = "Unknown";
 
-      for (var doc in userDonationsSnapshot.docs) {
-        var data = doc.data() as Map<String, dynamic>;
+        for (var doc in userDonationsSnapshot.docs) {
+          print("Fetched donation data: ${doc.data()}");
+          var data = doc.data() as Map<String, dynamic>?;
 
-        Timestamp? timestamp = data['createdAt'] as Timestamp?;
-        if (timestamp != null) {
-          DateTime donationDate = timestamp.toDate(); // Convert Firestore Timestamp to DateTime
-          String formattedDate = "${donationDate.year}-${donationDate.month.toString().padLeft(2, '0')}";
+          if (data != null) {
+            String? pickUpDate = data['PickUpDate'] as String?;
 
-          if (formattedDate == currentMonth) { // Compare formatted date with current month
-            totalServings += (data['NumberOfServing'] ?? 0) as int;
-            totalDonations++;
+            if (pickUpDate != null && pickUpDate.length >= 7) {
+              String formattedDate = pickUpDate.substring(0, 7); // Extract YYYY-MM
+
+              if (formattedDate == currentMonth) {
+                totalServings += (data['NumberOfServing'] ?? 0) as int;
+                totalDonations++;
+              }
+            }
+
+            donorName = data['Name'] ?? donorName;
+            city = data['City'] ?? city;
           }
         }
 
-        donorName = data['Name'] ?? donorName;
-        city = data['City'] ?? city;
+        if (totalDonations > 0) {
+          tempDonorsList.add({
+            'Name': donorName,
+            'TotalServings': totalServings,
+            'TotalDonations': totalDonations,
+            'City': city,
+          });
+        }
       }
 
-      if (totalDonations > 0) {
-        tempDonorsList.add({
-          'Name': donorName,
-          'TotalServings': totalServings,
-          'TotalDonations': totalDonations,
-          'City': city,
-        });
-      }
+      tempDonorsList.sort((a, b) => sortDescending
+          ? b['TotalServings'].compareTo(a['TotalServings'])
+          : a['TotalServings'].compareTo(b['TotalServings']));
+
+      setState(() {
+        donorsList = tempDonorsList;
+      });
+    } catch (e) {
+      print("Error fetching donations: $e");
     }
-
-    // Sort based on servings (highest first)
-    tempDonorsList.sort((a, b) => sortDescending
-        ? b['TotalServings'].compareTo(a['TotalServings'])
-        : a['TotalServings'].compareTo(b['TotalServings']));
-
-    setState(() {
-      donorsList = tempDonorsList;
-    });
   }
+
 
   @override
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> filteredList = donorsList
-        .where((donor) => donor['Name'].toLowerCase().contains(searchQuery.toLowerCase()))
+        .where((donor) =>
+        donor['Name'].toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
 
     return Scaffold(
@@ -97,9 +105,8 @@ class _BeOneDonorsState extends State<BeOneDonors> {
             fontSize: 17,
           ),
         ),
-        centerTitle: false,
-        elevation: 0,
         backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
@@ -110,14 +117,14 @@ class _BeOneDonorsState extends State<BeOneDonors> {
       body: SafeArea(
         child: Column(
           children: [
-            // Search Bar
             Padding(
               padding: EdgeInsets.all(8.0),
               child: TextField(
                 decoration: InputDecoration(
                   hintText: "Search donor by name...",
                   prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onChanged: (value) {
                   setState(() {
@@ -127,7 +134,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
               ),
             ),
 
-            // Sorting Button
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
@@ -138,7 +144,9 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   IconButton(
-                    icon: Icon(sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
+                    icon: Icon(sortDescending
+                        ? Icons.arrow_downward
+                        : Icons.arrow_upward),
                     onPressed: () {
                       setState(() {
                         sortDescending = !sortDescending;
@@ -152,7 +160,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
               ),
             ),
 
-            // List of Donors
             Expanded(
               child: filteredList.isEmpty
                   ? Center(child: Text("No completed donations found"))
@@ -173,7 +180,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // Square icon on the left
                           Container(
                             height: 90.0,
                             width: 90.0,
@@ -183,11 +189,10 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                             ),
                           ),
                           SizedBox(width: 16.0),
-
-                          // Text details
                           Expanded(
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   donation['Name'],

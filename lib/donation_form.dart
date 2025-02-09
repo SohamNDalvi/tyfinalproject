@@ -52,54 +52,55 @@ class _DonationFormState extends State<DonationForm> {
     );
 
     if (pickedDate != null) {
-      // Compare only the date portions (ignoring time)
-      DateTime pickedDateWithoutTime = DateTime(pickedDate.year, pickedDate.month, pickedDate.day);
-      DateTime nowWithoutTime = DateTime(now.year, now.month, now.day);
-
-      if (pickedDateWithoutTime.isAtSameMomentAs(nowWithoutTime) || pickedDateWithoutTime.isAfter(nowWithoutTime)) {
-        return pickedDate; // Return valid date
-      } else {
-        // Show Snackbar if date is not valid
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Pickup date must be today or a future date.'),
-        ));
-        return null;
-      }
+      return pickedDate;
     } else {
       return null; // Return null if no date is selected
     }
   }
 
-
   Future<TimeOfDay?> _selectTime(BuildContext context) async {
+    if (_dateController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a date first.')),
+      );
+      return null;
+    }
+
+    DateTime now = DateTime.now();
+    DateTime selectedDate = DateFormat('yyyy-MM-dd').parse(_dateController.text);
+
     TimeOfDay? pickedTime = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.now(),
     );
 
     if (pickedTime != null) {
-      // Get current date and time
-      DateTime now = DateTime.now();
-      DateTime selectedDateTime = DateTime(now.year, now.month, now.day, pickedTime.hour, pickedTime.minute);
+      DateTime selectedDateTime = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
 
-      // Check if the selected time is within the night time range (12:00 AM - 6:00 AM)
+      // If selected time is between 12:00 AM - 6:00 AM, reject it
       if (pickedTime.hour >= 0 && pickedTime.hour < 6) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Pickup time must be between 6:00 AM and 11:59 PM.'),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Pickup time must be between 6:00 AM and 11:59 PM.')),
+        );
         return null;
       }
 
-      // Check if the selected time is after the current time for today
-      if (selectedDateTime.isBefore(now)) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Pickup time must be after the current time.'),
-        ));
+      // If date is today, ensure selected time is in the future
+      if (selectedDate.isAtSameMomentAs(DateTime(now.year, now.month, now.day)) &&
+          selectedDateTime.isBefore(now)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Pickup time must be after the current time.')),
+        );
         return null;
       }
 
-      // Return valid time
-      return pickedTime;
+      return pickedTime; // Valid time
     }
 
     return null;

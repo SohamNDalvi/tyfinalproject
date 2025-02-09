@@ -179,10 +179,7 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
                             String? userId = prefs.getString('uid');
 
                             if (userId != null) {
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(userId)
-                                  .set({
+                              await FirebaseFirestore.instance.collection('users').doc(userId).set({
                                 'firstName': firstNameController.text,
                                 'lastName': lastNameController.text,
                                 'dob': dobController.text,

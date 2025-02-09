@@ -1,3 +1,4 @@
+import 'package:final_project/EmployeeUploadation_Page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -5,12 +6,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'admin_donation_approve_page.dart';
+import 'package:final_project/Completed_donation_page.dart';
 import 'home_screen.dart';
 import 'forgot_password_page.dart';
 import 'User_get_details.dart';
+import 'admin_home_page.dart';
 import 'otp_validation_screen.dart';
 import 'emp_login_page.dart';
 import 'user_signup_page.dart';
+import 'package:final_project/Completed_donation_page.dart';
+import 'employee_approve_page.dart';
+import 'employee_detail.dart';
+import 'Employee_selection.dart';
+import 'single_user_detail_page.dart';
+import 'All_employee_details_Page.dart';
+import 'All_user_details_page.dart';
+import 'Donations_details_page.dart';
+import 'Admin_Account_Page.dart';
+import 'Employee_home_Page.dart';
+import 'Employee_Ongoing_Donation_Page.dart';
+import 'Employee_account_screen.dart';
+import 'Employee_StartDonation_Page.dart';
+import 'Employee_start_location_Sharing_Page.dart';
+import 'EmployeeUploadation_Page.dart';
+import 'User_Pending_Donation_Page.dart';
+
 
 class UserLoginPage extends StatefulWidget {
   const UserLoginPage({Key? key}) : super(key: key);
@@ -135,8 +156,8 @@ class _UserLoginPageState extends State<UserLoginPage> {
         return;
       }
 
-      // 🔹 Try to sign in with email & password
       try {
+        // 🔹 Try to sign in with email & password
         UserCredential userCredential = await FirebaseAuth.instance
             .signInWithEmailAndPassword(email: email, password: password);
 
@@ -145,8 +166,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
         // Store UID in SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('uid', uid);
-        String? savedUid = prefs.getString('uid');
-        print("Saved UID: $savedUid");
+        print("Saved UID: ${prefs.getString('uid')}");
 
         // Fetch user data from Firestore
         DocumentSnapshot userDoc =
@@ -171,18 +191,29 @@ class _UserLoginPageState extends State<UserLoginPage> {
           });
         }
       } on FirebaseAuthException catch (e) {
+        String errorMsg = "An error occurred. Please try again.";
+
         if (e.code == 'invalid-credential') {
-          // If the email is registered with Google, show the appropriate message
-          setState(() {
-            errorMessage =
-            "Incorrect password. Please check your credentials or This email is registered with Google Sign-In. Try sign in using Google.";
-          });
+          // Fetch user data again to check UserType
+          DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(userQuery.docs.first.id).get();
+
+          String userType = userDoc['UserType'];
+          if (userType == 'user') {
+            errorMsg =
+            "Incorrect password. Please check your credentials or you are registered with google SignIn. So try Google SignIn";
+          } else {
+            errorMsg =
+            "Your email is registered as an employee. Please log in using User's Email Id.";
+          }
         } else {
-          setState(() {
-            errorMessage = e.message!;
-            print("Firebase Error: ${e.code}");
-          });
+          errorMsg = e.message ?? errorMsg;
+          print("Firebase Error: ${e.code}");
         }
+
+        setState(() {
+          errorMessage = errorMsg;
+        });
       }
     } catch (e) {
       setState(() {
@@ -190,6 +221,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
       });
     }
   }
+
 
 
 
@@ -229,7 +261,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => HomeScreen(),
+                                  builder: (context) =>  UserPendingDonationPage(),
                                 ),
                               );
                             },
