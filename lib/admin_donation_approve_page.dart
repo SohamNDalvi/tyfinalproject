@@ -1,12 +1,57 @@
+import 'package:final_project/Donations_details_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'Employee_selection.dart';
+import 'Donations_details_page.dart';
 
-class PendingDonation extends StatelessWidget {
-  final LatLng donationLocation = LatLng(19.0760, 72.8777);
+class PendingDonation extends StatefulWidget {
+  final Map<String, dynamic> donationData;
+  final String userId; // Add userId parameter to fetch user details
+
+  PendingDonation({required this.donationData, required this.userId});
+
+  @override
+  _PendingDonationState createState() => _PendingDonationState();
+}
+
+class _PendingDonationState extends State<PendingDonation> {
+  String firstName = '';
+  String lastName = '';
+  String email = '';
+  String phoneNumber = '';
+  String dob = '';
+  String gender = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserDetails(widget.userId);
+  }
+
+  Future<void> _fetchUserDetails(String userId) async {
+    DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+    if (userDoc.exists) {
+      setState(() {
+        firstName = userDoc['firstName'] ?? '';
+        lastName = userDoc['lastName'] ?? '';
+        dob = userDoc['dob'] ?? '';
+        gender = userDoc['gender'] ?? '';
+        email = userDoc['email'] ?? '';
+        phoneNumber = userDoc['phoneNumber'] ?? '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final LatLng donationLocation = LatLng(
+      widget.donationData['CurrentLatitude'] ?? 19.0760,
+      widget.donationData['CurrentLongitude'] ?? 72.8777,
+    );
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(context),
@@ -18,25 +63,23 @@ class PendingDonation extends StatelessWidget {
             _buildProfileSection(),
             _buildSectionTitle("Donation Information"),
             _buildInfoTable([
-              {"Donation ID": "gdyhgujujioikj"},
-              {"Food Category": "Dinner"},
-              {"Food Condition": "Fresh"},
-              {"Food Type": "Veg"},
-              {"Ingredient Used": "Dinner"},
-              {"Number of Servings": "25 People"},
-              {"Special Instructions": "Handle with care"},
-              {"Quantity": "400g"}
+              {"Donation ID": widget.donationData['DonationId']},
+              {"Food Category": widget.donationData['FoodCategory']},
+              {"Food Condition": widget.donationData['FoodCondition']},
+              {"Food Type": widget.donationData['FoodType']},
+              {"Ingredient Used": widget.donationData['IngredientUsed']},
+              {"Number of Servings": "${widget.donationData['NumberOfServing']} People"},
+              {"Special Instructions": widget.donationData['SpecialInstruction']},
+              {"Quantity": widget.donationData['Quantity']}
             ]),
             _buildSectionTitle("Pickup Information"),
             _buildInfoTable([
-              {"Address": "Sai Shraddha Phase 2, Hanuman Tekdi, Mumbai, Maharashtra, 400068"},
-              {"Pickup Date": "2025-01-30"},
-              {"Pickup Time Slot": "3:16 PM"},
-              {"Status": "Pending"}
+              {"Address": widget.donationData['Address']},
+              {"Pickup Date": widget.donationData['PickUpDate']},
+              {"Pickup Time Slot": widget.donationData['PickUpTimeSlot']},
+              {"Status": widget.donationData['status']}
             ]),
-
-
-            _buildMapSection(context),
+            _buildMapSection(context, donationLocation),
             SizedBox(height: 20),
             _buildActionButtons(),
             SizedBox(height: 30),
@@ -77,11 +120,11 @@ class PendingDonation extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text("Soham Dalvi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text("${firstName} ${lastName}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 5),
-                Text("EMAIL: sohamdalvi12@gmail.com"),
-                Text("Phone: +91 8591509629"),
-                Text("User ID: gdyhgujujioikj"),
+                Text("EMAIL: ${email.isNotEmpty ? email : 'N/A'}"),
+                Text("Phone: ${phoneNumber.isNotEmpty ? phoneNumber : 'N/A'}"),
+                Text("User  ID: ${widget.donationData['userID']}"),
               ],
             ),
           ),
@@ -137,13 +180,13 @@ class PendingDonation extends StatelessWidget {
     );
   }
 
-  Widget _buildMapSection(BuildContext context) {
+  Widget _buildMapSection(BuildContext context, LatLng donationLocation) {
     return _buildInfoTable([
       {
         "Fetch location on Map": Column(
           children: [
             GestureDetector(
-              onTap: () => _showMapDialog(context),
+              onTap: () => _showMapDialog(context, donationLocation),
               child: Container(
                 height: 200,
                 width: 200,
@@ -167,28 +210,27 @@ class PendingDonation extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(height: 10),  // Add some space between the map and the button
+            SizedBox(height: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.lightBlueAccent,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4), // Set border radius to 3
+                  borderRadius: BorderRadius.circular(4),
                 ),
               ),
-              onPressed: () => _showMapDialog(context),
+              onPressed: () => _showMapDialog(context, donationLocation),
               child: Text(
                 "Open Full Map View",
-                style: TextStyle(fontSize: 13.5), // Set text size to 12
+                style: TextStyle(fontSize: 13.5),
               ),
             ),
-
           ],
         ),
       }
     ]);
   }
 
-  void _showMapDialog(BuildContext context) {
+  void _showMapDialog(BuildContext context, LatLng donationLocation) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -235,26 +277,52 @@ class PendingDonation extends StatelessWidget {
       children: [
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,  // White background
-            side: BorderSide(color: Colors.red),  // Red border
+            backgroundColor: Colors.white,
+            side: BorderSide(color: Colors.red),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),  // Border radius 15
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
-          onPressed: () {},
-          child: Text("REJECT", style: TextStyle(color: Colors.red)),  // Red text
+          onPressed: () async {
+            // Update the status to "Rejected"
+            await FirebaseFirestore.instance
+                .collection('Donations')
+                .doc(widget.userId) // Parent document for the user
+                .collection('userDonations')
+                .doc(widget.donationData['DonationId']) // Specific donation document
+                .update({
+              'status': 'Rejected',
+            });
+            // Optionally, show a message or navigate back
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AdminDonationDetails()),
+            );
+          },
+          child: Text("REJECT", style: TextStyle(color: Colors.red)),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,  // Orange background
+            backgroundColor: Colors.orange,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),  // Border radius 15
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
-          onPressed: () {},
-          child: Text("ACCEPT", style: TextStyle(color: Colors.white)),  // White text
+          onPressed: () {
+            // Navigate to EmployeeSelection page
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => EmployeeSelection(
+              userId: widget.userId,
+              donationId: widget.donationData['DonationId'],
+            ),),
+            );
+          },
+          child: Text("ACCEPT", style: TextStyle(color: Colors.white)),
         ),
       ],
     );
   }
 }
+
+

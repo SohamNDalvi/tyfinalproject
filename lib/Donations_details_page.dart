@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'completed_donation_page.dart'; // Import the CompletedDonationPage
+import 'user_pending_donation_page.dart'; // Import the UserPendingDonationPage
+import 'admin_donation_approve_page.dart'; // Import the PendingDonation Page
 
 class AdminDonationDetails extends StatefulWidget {
   @override
@@ -7,61 +11,184 @@ class AdminDonationDetails extends StatefulWidget {
 
 class _AdminDonationDetailsState extends State<AdminDonationDetails> {
   String selectedSection = "Pending Donations";
+  String searchQuery = "";
+  String sortBy = "Date"; // Default sorting criteria
+  bool isAscending = false; // Default sorting order
 
   List<String> sections = [
     "Pending Donations",
     "Completed Donations",
     "Assigned Donations",
     "Rejected Donations",
+    "Ongoing Donations", // New section added
   ];
 
-  Map<String, List<Map<String, String>>> donationsBySection = {
-    "Pending Donations": [
-      {
-        "name": "SOHAM NARSINHA DALVI",
-        "details": "Feed 10 HungryOnes",
-        "location": "Dahisar East",
-        "date": "12/03/2024",
-        "status": "Pending"
-      },
-    ],
-    "Completed Donations": [
-      {
-        "name": "RAHUL SHARMA",
-        "details": "Feed 10 HungryOnes",
-        "location": "Borivali West",
-        "date": "16/03/2024",
-        "status": "Completed"
-      },
-    ],
-    "Assigned Donations": [
-      {
-        "name": "PRIYA VERMA",
-        "details": "Feed 15 HungryOnes",
-        "location": "Andheri West",
-        "date": "22/03/2024",
-        "status": "Assigned"
-      },
-    ],
-    "Rejected Donations": [
-      {
-        "name": "VIJAY PATIL",
-        "details": "Feed 20 HungryOnes",
-        "location": "Bandra West",
-        "date": "18/03/2024",
-        "status": "Rejected"
-      },
-
-    ],
+  Map<String, List<Map<String, dynamic>>> donationsBySection = {
+    "Pending Donations": [],
+    "Completed Donations": [],
+    "Assigned Donations": [],
+    "Rejected Donations": [],
+    "Ongoing Donations": [], // New section initialized
   };
 
-  String searchQuery = "";
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllDonations();
+  }
+
+  _fetchAllDonations() async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    // Mapping from status to section names
+    Map<String, String> statusToSection = {
+      'Pending': 'Pending Donations',
+      'Completed': 'Completed Donations',
+      'Assigned': 'Assigned Donations',
+      'Rejected': 'Rejected Donations',
+      'Ongoing': 'Ongoing Donations', // New mapping for ongoing donations
+    };
+
+    try {
+      final allUsersSnapshot = await firestore.collection('Donations').get();
+
+      for (var userDoc in allUsersSnapshot.docs) {
+        final userDonationsSnapshot = await userDoc.reference.collection('userDonations').get();
+
+        for (var donationDoc in userDonationsSnapshot.docs) {
+          var donationData = donationDoc.data();
+          String status = donationData['status'] ?? 'Pending';
+
+          // Use the mapping to get the correct section
+          String section = statusToSection[status] ?? 'Pending Donations';
+
+          // Ensure the list for the section is initialized
+          if (donationsBySection[section] == null) {
+            donationsBySection[section] = [];
+          }
+
+          // Add donation to the appropriate section based on its status
+          donationsBySection[section]!.add({
+            ...donationData,
+            "userID": userDoc.id,
+            "DonationId": donationDoc.id,
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching donations: $e");
+    }
+
+    // Sort donations by date when the page is loaded
+    _sortDonations();
+    setState(() {});
+  }
+
+  void _sortDonations() {
+    for (var section in donationsBySection.keys) {
+      donationsBySection[section]!.sort((a, b) {
+        if (sortBy == "Date") {
+          DateTime dateA = DateTime.parse(a["PickUpDate"] ?? DateTime.now().toString());
+          DateTime dateB = DateTime.parse(b["PickUpDate"] ?? DateTime.now().toString());
+          return isAscending ? dateA.compareTo(dateB) : dateB.compareTo(dateA);
+        } else {
+          int servingsA = a["NumberOfServing"] ?? 0;
+          int servingsB = b["NumberOfServing"] ?? 0;
+          return isAscending ? servingsA.compareTo(servingsB) : servingsB.compareTo(servingsA);
+        }
+      });
+    }
+  }
+
+  void _openSortDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: Container(
+            width: 400, // Set the desired width
+            height: 250, // Set the desired height
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Sort Donations", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                SizedBox(height: 16), // Space between title and content
+                DropdownButton<String>(
+                  value: sortBy,
+                  onChanged: (value) {
+                    setState(() {
+                      sortBy = value!;
+                    });
+                  },
+                  items: [
+                    DropdownMenuItem(value: "Date", child: Text("Sort by Date")),
+                    DropdownMenuItem(value: "Servings", child: Text("Sort by Number of Servings")),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Ascending"),
+                    Radio(
+                      value: true,
+                      groupValue: isAscending,
+                      onChanged: (value) {
+                        setState(() {
+                          isAscending = true;
+                        });
+                        Navigator.of(context).pop(); // Close the dialog after selection
+                        _sortDonations(); // Sort donations immediately
+                        _openSortDialog(); // Reopen the dialog to reflect the change
+                      },
+                    ),
+                    Text("Descending"),
+                    Radio(
+                      value: false,
+                      groupValue: isAscending,
+                      onChanged: (value) {
+                        setState(() {
+                          isAscending = false;
+                        });
+                        Navigator.of(context).pop(); // Close the dialog after selection
+                        _sortDonations(); // Sort donations immediately
+                        _openSortDialog(); // Reopen the dialog to reflect the change
+                      },
+                    ),
+                  ],
+                ),
+                SizedBox(height: 20), // Space before the buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        _sortDonations(); // Sort donations when OK is pressed
+                        Navigator.of(context).pop();
+                      },
+                      child: Text("OK"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, String>> filteredDonations = donationsBySection[selectedSection]!
+    List<Map<String, dynamic>> filteredDonations = donationsBySection[selectedSection]!
         .where((donation) =>
-        donation["name"]!.toLowerCase().contains(searchQuery.toLowerCase()))
+    donation["Name"]!.toLowerCase().contains(searchQuery.toLowerCase()) ||
+        (donation["PickUpDate"]?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false) ||
+        (donation["City"]?.toLowerCase().contains(searchQuery.toLowerCase()) ?? false) ||
+        (donation["NumberOfServing"]?.toString().contains(searchQuery) ?? false))
         .toList();
 
     return Scaffold(
@@ -73,6 +200,12 @@ class _AdminDonationDetailsState extends State<AdminDonationDetails> {
             Navigator.pop(context);
           },
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.sort),
+            onPressed: _openSortDialog,
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -80,7 +213,7 @@ class _AdminDonationDetailsState extends State<AdminDonationDetails> {
             padding: const EdgeInsets.all(16.0),
             child: TextField(
               decoration: InputDecoration(
-                hintText: "Search by name",
+                hintText: "Search by name, date, city, or servings",
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -143,17 +276,19 @@ class _AdminDonationDetailsState extends State<AdminDonationDetails> {
                       color: Colors.blue,
                     ),
                     title: Text(
-                      filteredDonations[index]["name"]!,
+                      filteredDonations[index]["Name"]!,
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(filteredDonations[index]["details"]!),
+                        Text(filteredDonations[index]["NumberOfServing"] != null
+                            ? "Feed ${filteredDonations[index]["NumberOfServing"]} Hungry Ones"
+                            : "No details available"),
                         Text(
-                          "From ${filteredDonations[index]["location"]}",
+                          "From ${filteredDonations[index]["City"] ?? "Unknown location"}",
                         ),
-                        Text("Date: ${filteredDonations[index]["date"]}"),
+                        Text("Date: ${filteredDonations[index]["PickUpDate"] ?? "Unknown date"}"),
                       ],
                     ),
                     trailing: Container(
@@ -165,6 +300,8 @@ class _AdminDonationDetailsState extends State<AdminDonationDetails> {
                             ? Colors.green.shade100
                             : filteredDonations[index]["status"] == "Assigned"
                             ? Colors.blue.shade100
+                            : filteredDonations[index]["status"] == "Ongoing"
+                            ? Colors.yellow.shade100 // Color for ongoing donations
                             : Colors.red.shade100,
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -177,11 +314,43 @@ class _AdminDonationDetailsState extends State<AdminDonationDetails> {
                               ? Colors.green
                               : filteredDonations[index]["status"] == "Assigned"
                               ? Colors.blue
+                              : filteredDonations[index]["status"] == "Ongoing"
+                              ? Colors.yellow // Color for ongoing donations
                               : Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    onTap: () async {
+                      if (filteredDonations[index]["status"] == 'Pending') {
+                        var donationDetails = await FirebaseFirestore.instance
+                            .collection('Donations')
+                            .doc(filteredDonations[index]["userID"])
+                            .collection('userDonations')
+                            .doc(filteredDonations[index]["DonationId"])
+                            .get();
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PendingDonation(
+                              donationData: donationDetails.data()!,
+                              userId: filteredDonations[index]["userID"], // Pass userId
+                            ),
+                          ),
+                        );
+                      } else {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserPendingDonationPage(
+                              userId: filteredDonations[index]["userID"],
+                              donationId: filteredDonations[index]["DonationId"],
+                            ),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 );
               },
@@ -191,11 +360,4 @@ class _AdminDonationDetailsState extends State<AdminDonationDetails> {
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: AdminDonationDetails(),
-    debugShowCheckedModeBanner: false,
-  ));
 }

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'user_login_page.dart'; // Ensure this path is correct
 
 class EmployeeAccountScreen extends StatefulWidget {
@@ -9,19 +13,33 @@ class EmployeeAccountScreen extends StatefulWidget {
 }
 
 Future<void> _logout(BuildContext context) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  await prefs.remove('uid');  // Clear the stored user ID
+
+  // Check if the user is signed in with Google
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+  if (await googleSignIn.isSignedIn()) {
+    // Sign out from Google
+    await googleSignIn.signOut();
+  }
+
+  // Sign out from Firebase Authentication
+  await FirebaseAuth.instance.signOut();
+
+  // Navigate to the UserLoginPage
   Navigator.pushReplacement(
     context,
-    MaterialPageRoute(builder: (context) => UserLoginPage()),
+    MaterialPageRoute(builder: (context) => UserLoginPage()),  // Navigate to login screen
   );
 }
 
 class _EmployeeAccountScreenState extends State<EmployeeAccountScreen> {
-  String firstName = 'John';
-  String lastName = 'Doe';
-  String email = 'johndoe@example.com';
-  String phoneNumber = '123-456-7890';
-  String dob = '01/01/2000';
-  String gender = 'Male';
+  String firstName = '';
+  String lastName = '';
+  String email = '';
+  String phoneNumber = '';
+  String dob = '';
+  String gender = '';
 
   TextEditingController firstNameController = TextEditingController();
   TextEditingController lastNameController = TextEditingController();
@@ -35,12 +53,61 @@ class _EmployeeAccountScreenState extends State<EmployeeAccountScreen> {
   @override
   void initState() {
     super.initState();
-    firstNameController.text = firstName;
-    lastNameController.text = lastName;
-    emailController.text = email;
-    phoneNumberController.text = phoneNumber;
-    dobController.text = dob;
-    genderController.text = gender;
+    _fetchUserData();
+  }
+
+  // Fetch user data from Firestore using the uid
+  Future<void> _fetchUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('uid'); // Fetch the user ID from SharedPreferences
+
+    if (userId != null) {
+      // Fetch user data from Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        setState(() {
+          firstName = userDoc['firstName'] ?? '';
+          lastName = userDoc['lastName'] ?? '';
+          email = userDoc['email'] ?? '';
+          phoneNumber = userDoc['phoneNumber'] ?? '';
+          dob = userDoc['dob'] ?? '';
+          gender = userDoc['gender'] ?? '';
+
+          // Set the controllers with fetched values for editing
+          firstNameController.text = firstName;
+          lastNameController.text = lastName;
+          emailController.text = email;
+          phoneNumberController.text = phoneNumber;
+          dobController.text = dob;
+          genderController.text = gender;
+        });
+      }
+    }
+  }
+
+  // Update user data in Firestore
+  Future<void> _updateUserData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('uid');
+
+    if (userId != null) {
+      // Update Firestore only if any field is modified
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'firstName': firstNameController.text.isNotEmpty ? firstNameController.text : firstName,
+        'lastName': lastNameController.text.isNotEmpty ? lastNameController.text : lastName,
+        'email': emailController.text.isNotEmpty ? emailController.text : email,
+        'phoneNumber': phoneNumberController.text.isNotEmpty ? phoneNumberController.text : phoneNumber,
+        'dob': dobController.text.isNotEmpty ? dobController.text : dob,
+        'gender': genderController.text.isNotEmpty ? genderController.text : gender,
+      });
+
+      // After update, fetch the latest data
+      _fetchUserData();
+      setState(() {
+        isEditing = false; // Hide the Save button after updating
+      });
+    }
   }
 
   @override
@@ -54,7 +121,7 @@ class _EmployeeAccountScreenState extends State<EmployeeAccountScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon : const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -203,17 +270,7 @@ class _EmployeeAccountScreenState extends State<EmployeeAccountScreen> {
             const SizedBox(height: 16.0),
             if (isEditing)
               ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    firstName = firstNameController.text;
-                    lastName = lastNameController.text;
-                    email = emailController.text;
-                    phoneNumber = phoneNumberController.text;
-                    dob = dobController.text;
-                    gender = genderController.text;
-                    isEditing = false;
-                  });
-                },
+                onPressed: _updateUserData,
                 child: const Text('Save'),
               ),
             const SizedBox(height: 16.0),
@@ -251,7 +308,9 @@ class _EmployeeAccountScreenState extends State<EmployeeAccountScreen> {
                     leading: const Icon(Icons.logout, color: Colors.black),
                     title: const Text(
                       "Logout",
-                      style: TextStyle(fontFamily: 'cerapro'),
+                      style: TextStyle(
+                        fontFamily: 'cerapro',
+                      ),
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {

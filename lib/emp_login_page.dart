@@ -10,6 +10,8 @@ import 'forgot_password_page.dart';
 import 'Emp_get_details.dart';
 import 'user_signup_page.dart';
 import 'user_login_page.dart';
+import 'package:final_project/Employee_home_Page.dart';
+import 'admin_home_page.dart'; // Import the AdminHomePage
 
 class EmpLoginPage extends StatefulWidget {
   const EmpLoginPage({Key? key}) : super(key: key);
@@ -27,62 +29,57 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
 
   Future<void> signInWithGoogle() async {
     try {
-      // Start Google Sign-In process
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // User canceled the Google sign-in
+      await _googleSignIn.signOut();
+      final GoogleSignInAccount? googleUser  = await _googleSignIn.signIn();
+      if (googleUser  == null) {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser .authentication;
 
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      // Sign in to Firebase with Google credentials
-      UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
 
       String uid = userCredential.user!.uid;
       String? userEmail = userCredential.user!.email;
 
-      // Store UID in SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('uid', uid);
-      print("Saved UID: $uid");
-
-      // Fetch user data from Firestore
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (userDoc.exists) {
         String userType = userDoc['UserType'];
         if (userType == 'employee') {
-          // Navigate to HomeScreen if user is found
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('uid', uid);
+          print("Saved UID: $uid");
+
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => HomeScreen()),
+            MaterialPageRoute(builder: (context) => EmployeeHomePage()),
+          );
+        } else if (userType == 'admin') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AdminHomePage()), // Navigate to AdminHomePage
           );
         } else {
           setState(() {
-            errorMessage =
-            "Your email is registered as an User. Please log in with a Employee's email.";
+            errorMessage = "Your email is registered as a User. Please log in with an Employee's email.";
           });
         }
       } else {
-        // If user is not in Firestore, create a new entry
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'email': userEmail,
-          'UserType': 'employee', // Default role
-          // Add more fields if necessary (e.g., name, profile picture)
+          'UserType': 'employee',
         });
 
-        // Navigate to User Details Screen
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('uid', uid);
+        print("Saved UID for new user: $uid");
+
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => EmpGetDetailsScreen()),
@@ -98,7 +95,6 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
       });
     }
   }
-
 
   Future<void> validateEmail() async {
     String email = emailController.text.trim();
@@ -121,7 +117,6 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
     }
 
     try {
-      // 🔹 First, check if the email exists in Firestore
       QuerySnapshot userQuery = await FirebaseFirestore.instance
           .collection('users')
           .where('email', isEqualTo: email)
@@ -135,32 +130,35 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
       }
 
       try {
-        // 🔹 Try to sign in with email & password
         UserCredential userCredential = await FirebaseAuth.instance
             .signInWithEmailAndPassword(email: email, password: password);
 
         String uid = userCredential.user!.uid;
 
-        // Store UID in SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('uid', uid);
         print("Saved UID: ${prefs.getString('uid')}");
 
-        // Fetch user data from Firestore
         DocumentSnapshot userDoc =
         await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
         if (userDoc.exists) {
+          print("exist");
           String userType = userDoc['UserType'];
           if (userType == 'employee') {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => HomeScreen()),
             );
+          } else if (userType == 'admin') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AdminHomePage()), // Navigate to AdminHomePage
+            );
           } else {
             setState(() {
               errorMessage =
-              "Your email ID is registered as an User. Please log in with a Employee's email ID.";
+              "Your email ID is registered as a User. Please log in with an Employee's email ID.";
             });
           }
         } else {
@@ -172,17 +170,19 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
         String errorMsg = "An error occurred. Please try again.";
 
         if (e.code == 'invalid-credential') {
-          // Fetch user data again to check UserType
           DocumentSnapshot userDoc =
           await FirebaseFirestore.instance.collection('users').doc(userQuery.docs.first.id).get();
 
           String userType = userDoc['UserType'];
-          if (userType == 'Employee') {
+          if (userType == 'employee') {
             errorMsg =
-            "Incorrect password. Please check your credentials or you are registered with google SignIn. So try Google SignIn";
+            "Incorrect password. Please check your credentials or you are registered with Google SignIn. So try Google SignIn.";
+          } else if (userType == 'admin') {
+            errorMsg =
+            "Incorrect password. Please check your credentials or you are registered with Google SignIn. So try Google SignIn.";
           } else {
             errorMsg =
-            "Your email is registered as an User. Please log in using Employee's Email Id.";
+            "Your email is registered as a User. Please log in using Employee's Email Id.";
           }
         } else {
           errorMsg = e.message ?? errorMsg;
@@ -199,8 +199,6 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
       });
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +418,6 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
                         const SizedBox(height: 5),
                         GestureDetector(
                           onTap: () {
-                            // Navigate to UserSignupPage when tapped
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const UserSignupPage()),
@@ -440,7 +437,7 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
 
                         const SizedBox(height: 5),
                         OutlinedButton.icon(
-                          onPressed: ( signInWithGoogle),
+                          onPressed: (signInWithGoogle),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: Colors.orange),
                             padding: const EdgeInsets.symmetric(vertical: 9),

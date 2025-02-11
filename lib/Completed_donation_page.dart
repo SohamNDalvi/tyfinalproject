@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 
 class CompletedDonationPage extends StatefulWidget {
+  final String donationId; // Define the donationId parameter
+  final String userId;
+  CompletedDonationPage({required this.userId,required this.donationId}); // Constructor
+
   @override
   _CompletedDonationPageState createState() => _CompletedDonationPageState();
 }
 
 class _CompletedDonationPageState extends State<CompletedDonationPage> {
   int _currentIndex = 0; // Track active image
+  Map<String, dynamic>? donationDetails;
 
   final List<String> imagePaths = [
     "assets/images/sponsor_banner1.jpg",
@@ -17,7 +23,56 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    fetchDonationDetails();
+  }
+
+  Future<void> fetchDonationDetails() async {
+
+    try {
+      print("Printing , $this.donationId");
+      DocumentSnapshot donationSnapshot = await FirebaseFirestore.instance
+          .collection('Donations')
+          .doc(widget.userId)
+          .collection('userDonations')
+          .doc(widget.donationId)
+          .get();
+
+      if (donationSnapshot.exists) {
+        setState(() {
+          donationDetails = donationSnapshot.data() as Map<String, dynamic>;
+        });
+      } else {
+        setState(() {
+          donationDetails = {}; // Set empty map to prevent null errors
+        });
+      }
+    } catch (e) {
+      setState(() {
+        donationDetails = {'error': 'Failed to fetch data'};
+      });
+      print("Error fetching donation details: $e");
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (donationDetails == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text("Donation Details"),
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -65,13 +120,11 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
                     child: Column(
                       children: [
                         Text(
-                          "Soham Dalvi",
+                          donationDetails!['Name'] ?? "Unknown",
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 5),
-                        Text("EMAIL ID: sohamdalvi12@gmail.com"),
-                        Text("Phone Number: +91 8591509629"),
-                        Text("User ID : gdyhgujujioikj"),
+                        Text("User  ID: ${donationDetails!['userID'] ?? 'N/A'}"),
                       ],
                     ),
                   ),
@@ -83,24 +136,24 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
             // Donation Information Section
             _buildSectionTitle("Donation Information"),
             _buildInfoTable([
-              {"Donation Id": "gdyhgujujioikj"},
-              {"Food Category": "Dinner"},
-              {"Food Condition": "Fresh"},
-              {"Food Type": "Veg"},
-              {"Ingredient Used": "Dinner"},
-              {"Number Of Serving": "25 People"},
-              {"Special Instructions": "Handle with care"},
-              {"Quantity": "400g"},
+              {"Donation Id": donationDetails!['DonationId'] ?? 'N/A'},
+              {"Food Category": donationDetails!['FoodCategory'] ?? 'N/A'},
+              {"Food Condition": donationDetails!['FoodCondition'] ?? 'N/A'},
+              {"Food Type": donationDetails!['FoodType'] ?? 'N/A'},
+              {"Ingredient Used": donationDetails!['IngredientUsed'] ?? 'N/A'},
+              {"Number Of Serving": "${donationDetails!['NumberOfServing']} People"},
+              {"Special Instructions": donationDetails!['SpecialInstruction'] ?? 'N/A'},
+              {"Quantity": donationDetails!['Quantity'] ?? 'N/A'},
             ]),
             SizedBox(height: 20),
 
             // Pickup Information Section
             _buildSectionTitle("Pickup Information"),
             _buildInfoTable([
-              {"Address": "Sai Shraddha Phase 2, Hanuman Tekdi, Mumbai, Maharashtra, 400068"},
-              {"Pickup Date": "2025-01-30"},
-              {"Pickup Time Slot": "3:16 PM"},
-              {"Status": "Completed"},
+              {"Address": donationDetails!['Address'] ?? 'N/A'},
+              {"Pickup Date": donationDetails!['PickUpDate'] ?? 'N/A'},
+              {"Pickup Time Slot": donationDetails!['PickUpTimeSlot'] ?? 'N/A'},
+              {"Status": donationDetails!['status'] ?? 'N/A'},
             ]),
             SizedBox(height: 20),
 

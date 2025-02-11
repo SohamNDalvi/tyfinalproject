@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'Donations_details_page.dart'; // Import the AdminDonationDetails page
 
 class AdminHomePage extends StatelessWidget {
   @override
@@ -9,32 +10,62 @@ class AdminHomePage extends StatelessWidget {
         actions: [
           IconButton(
             icon: Icon(Icons.account_circle),
-            onPressed: () {},
+            onPressed: () {
+              // Handle account icon tap
+            },
           ),
           Padding(
             padding: const EdgeInsets.only(right: 14.0),
             child: IconButton(
               icon: Icon(Icons.notifications),
-              onPressed: () {},
+              onPressed: () {
+                // Handle notifications icon tap
+              },
             ),
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildFullImageBox('assets/images/sponsor_banner1.jpg'),
+              GestureDetector(
+                onTap: () {
+                  // Navigate to Donation Details page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => AdminDonationDetails()),
+                  );
+                },
+                child: _buildFullImageBox('assets/images/sponsor_banner2.png'),
+              ),
               SizedBox(height: 16.0),
 
               Row(
                 children: [
-                  Expanded(child: _buildTextOnlyBox('Donation Details', 'assets/images/sponsor_banner2.png')),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        // Navigate to Donation Details page
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => AdminDonationDetails()),
+                        );
+                      },
+                      child: _buildTextOnlyBox('Donation Details', 'assets/images/sponsor_banner2.png'),
+                    ),
+                  ),
                   SizedBox(width: 16.0),
-                  Expanded(child: _buildTextOnlyBox('Employee Details', 'assets/images/sponsor_banner2.png')),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        // Handle tap for Employee Details
+                      },
+                      child: _buildTextOnlyBox('Employee Details', 'assets/images/sponsor_banner2.png'),
+                    ),
+                  ),
                 ],
               ),
               SizedBox(height: 16.0),
@@ -45,21 +76,41 @@ class AdminHomePage extends StatelessWidget {
                   Flexible(
                     child: Column(
                       children: [
-                        _buildTextOnlyBox('User Details', 'assets/images/sponsor_banner3.png', height: 120.0),
+                        GestureDetector(
+                          onTap: () {
+                            // Handle tap for User Details
+                          },
+                          child: _buildTextOnlyBox('User  Details', 'assets/images/sponsor_banner3.png', height: 120.0),
+                        ),
                         SizedBox(height: 16.0),
-                        _buildTextOnlyBox('Product Details', 'assets/images/sponsor_banner4.png', height: 120.0),
+                        GestureDetector(
+                          onTap: () {
+                            // Handle tap for Product Details
+                          },
+                          child: _buildTextOnlyBox('Product Details', 'assets/images/sponsor_banner4.png', height: 120.0),
+                        ),
                       ],
                     ),
                   ),
                   SizedBox(width: 16.0),
                   Expanded(
-                    child: _buildTextOnlyBox('BeOne Verification Details', 'assets/images/sponsor_banner5.png', height: 256.0),
+                    child: GestureDetector(
+                      onTap: () {
+                        // Handle tap for BeOne Verification Details
+                      },
+                      child: _buildTextOnlyBox('BeOne Verification Details', 'assets/images/sponsor_banner5.png', height: 256.0),
+                    ),
                   ),
                 ],
               ),
               SizedBox(height: 16.0),
 
-              _buildTextOnlyBox('Manage Your Rewards', 'assets/images/sponsor_banner6.png', height: 180.0),
+              GestureDetector(
+                onTap: () {
+                  // Handle tap for Manage Your Rewards
+                },
+                child: _buildTextOnlyBox('Manage Your Rewards', 'assets/images/sponsor_banner6.png', height: 180.0),
+              ),
             ],
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'Card_to_All_donation.dart'; // Import the DonationCardToAll class
 
 class BeOneDonors extends StatefulWidget {
   @override
@@ -14,7 +15,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
   @override
   void initState() {
     super.initState();
-    print("initState called");
     fetchCompletedDonations();
   }
 
@@ -24,12 +24,10 @@ class _BeOneDonorsState extends State<BeOneDonors> {
     String currentMonth = "${now.year}-${now.month.toString().padLeft(2, '0')}"; // Format YYYY-MM
 
     try {
-      QuerySnapshot donationsSnapshot =
-      await FirebaseFirestore.instance.collection('Donations').get();
+      QuerySnapshot donationsSnapshot = await FirebaseFirestore.instance.collection('Donations').get();
 
       for (var donationDoc in donationsSnapshot.docs) {
         String userId = donationDoc.reference.id;
-        print("User donation ID for debug: $userId");
 
         QuerySnapshot userDonationsSnapshot = await FirebaseFirestore.instance
             .collection('Donations')
@@ -44,7 +42,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
         String city = "Unknown";
 
         for (var doc in userDonationsSnapshot.docs) {
-          print("Fetched donation data: ${doc.data()}");
           var data = doc.data() as Map<String, dynamic>?;
 
           if (data != null) {
@@ -70,6 +67,7 @@ class _BeOneDonorsState extends State<BeOneDonors> {
             'TotalServings': totalServings,
             'TotalDonations': totalDonations,
             'City': city,
+            'userId': userId, // Store userId for navigation
           });
         }
       }
@@ -86,12 +84,10 @@ class _BeOneDonorsState extends State<BeOneDonors> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     List<Map<String, dynamic>> filteredList = donorsList
-        .where((donor) =>
-        donor['Name'].toLowerCase().contains(searchQuery.toLowerCase()))
+        .where((donor) => donor['Name'].toLowerCase().contains(searchQuery.toLowerCase()))
         .toList();
 
     return Scaffold(
@@ -123,8 +119,7 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                 decoration: InputDecoration(
                   hintText: "Search donor by name...",
                   prefixIcon: Icon(Icons.search),
-                  border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onChanged: (value) {
                   setState(() {
@@ -133,7 +128,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                 },
               ),
             ),
-
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Row(
@@ -144,9 +138,7 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   IconButton(
-                    icon: Icon(sortDescending
-                        ? Icons.arrow_downward
-                        : Icons.arrow_upward),
+                    icon: Icon(sortDescending ? Icons.arrow_downward : Icons.arrow_upward),
                     onPressed: () {
                       setState(() {
                         sortDescending = !sortDescending;
@@ -159,7 +151,6 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                 ],
               ),
             ),
-
             Expanded(
               child: filteredList.isEmpty
                   ? Center(child: Text("No completed donations found"))
@@ -168,75 +159,85 @@ class _BeOneDonorsState extends State<BeOneDonors> {
                 itemCount: filteredList.length,
                 itemBuilder: (context, index) {
                   var donation = filteredList[index];
-                  return Card(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    margin: EdgeInsets.symmetric(vertical: 10.0),
-                    elevation: 2,
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 90.0,
-                            width: 90.0,
-                            decoration: BoxDecoration(
-                              color: Color(0xFF2C3E75),
-                              borderRadius: BorderRadius.circular(10),
+                  return GestureDetector(
+                    onTap: () {
+                      // Navigate to DonationCardToAll with userId
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DonationCardToAll(userId: donation['userId']),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      color: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      margin: EdgeInsets.symmetric(vertical: 10.0),
+                      elevation: 2,
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              height: 90.0,
+                              width: 90.0,
+                              decoration: BoxDecoration(
+                                color: Color(0xFF2C3E75),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
-                          ),
-                          SizedBox(width: 16.0),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  donation['Name'],
-                                  style: TextStyle(
-                                    fontFamily: 'cerapro',
-                                    fontSize: 13.2,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey.shade700,
+                            SizedBox(width: 16.0),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    donation['Name'],
+                                    style: TextStyle(
+                                      fontFamily: 'cerapro',
+                                      fontSize: 13.2,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey.shade700,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 4.0),
-                                Text(
-                                  "For ${donation['TotalServings']} Hungry Ones",
-                                  style: TextStyle(
-                                    fontFamily: 'cerapro',
-                                    fontSize: 12.0,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF2C3E75),
+                                  SizedBox(height: 4.0),
+                                  Text(
+                                    "For ${donation['TotalServings']} Hungry Ones",
+                                    style: TextStyle(
+                                      fontFamily: 'cerapro',
+                                      fontSize: 12.0,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF2C3E75),
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 4.0),
-                                Text(
-                                  "In ${donation['TotalDonations']} Donations",
-                                  style: TextStyle(
-                                    fontFamily: 'cerapro',
-                                    fontSize: 12.0,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey.shade600,
+                                  SizedBox(height: 4.0),
+                                  Text(
+                                    "In ${donation['TotalDonations']} Donations",
+                                    style: TextStyle(
+                                      fontFamily: 'cerapro',
+                                      fontSize: 12.0,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                                SizedBox(height: 4.0),
-                                Text(
-                                  "From ${donation['City']}",
-                                  style: TextStyle(
-                                    fontFamily: 'cerapro',
-                                    fontSize: 10.0,
-                                    color: Colors.grey.shade600,
+                                  SizedBox(height: 4.0),
+                                  Text(
+                                    "From ${donation['City']}",
+                                    style: TextStyle(
+                                      fontFamily: 'cerapro',
+                                      fontSize: 10.0,
+                                      color: Colors.grey.shade600,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          Icon(Icons.arrow_forward, color: Colors.grey),
-                        ],
+                            Icon(Icons.arrow_forward, color: Colors.grey),
+                          ],
+                        ),
                       ),
                     ),
                   );

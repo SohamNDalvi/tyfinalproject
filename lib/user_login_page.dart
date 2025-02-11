@@ -31,6 +31,7 @@ import 'Employee_StartDonation_Page.dart';
 import 'Employee_start_location_Sharing_Page.dart';
 import 'EmployeeUploadation_Page.dart';
 import 'User_Pending_Donation_Page.dart';
+import 'Card_to_All_donation.dart';
 
 
 class UserLoginPage extends StatefulWidget {
@@ -49,6 +50,9 @@ class _UserLoginPageState extends State<UserLoginPage> {
 
   Future<void> signInWithGoogle() async {
     try {
+      // Ensure user is signed out before signing in again (forces email selection)
+      await _googleSignIn.signOut();
+
       // Start Google Sign-In process
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
@@ -56,8 +60,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
@@ -65,26 +68,22 @@ class _UserLoginPageState extends State<UserLoginPage> {
       );
 
       // Sign in to Firebase with Google credentials
-      UserCredential userCredential =
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
 
       String uid = userCredential.user!.uid;
       String? userEmail = userCredential.user!.email;
 
-      // Store UID in SharedPreferences
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('uid', uid);
-      print("Saved UID: $uid");
-
       // Fetch user data from Firestore
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .get();
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (userDoc.exists) {
         String userType = userDoc['UserType'];
         if (userType == 'user') {
+          // Store UID in SharedPreferences only if userType is 'user'
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('uid', uid);
+          print("Saved UID: $uid");
+
           // Navigate to HomeScreen if user is found
           Navigator.push(
             context,
@@ -92,8 +91,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
           );
         } else {
           setState(() {
-            errorMessage =
-            "Your email is registered as an employee. Please log in with a user's email.";
+            errorMessage = "Your email is registered as an employee. Please log in with a user's email.";
           });
         }
       } else {
@@ -101,8 +99,12 @@ class _UserLoginPageState extends State<UserLoginPage> {
         await FirebaseFirestore.instance.collection('users').doc(uid).set({
           'email': userEmail,
           'UserType': 'user', // Default role
-          // Add more fields if necessary (e.g., name, profile picture)
         });
+
+        // Store UID in SharedPreferences for new user
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('uid', uid);
+        print("Saved UID for new user: $uid");
 
         // Navigate to User Details Screen
         Navigator.push(
@@ -261,7 +263,7 @@ class _UserLoginPageState extends State<UserLoginPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>  UserPendingDonationPage(),
+                                  builder: (context) => HomeScreen(),
                                 ),
                               );
                             },

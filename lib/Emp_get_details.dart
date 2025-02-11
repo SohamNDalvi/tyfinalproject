@@ -1,3 +1,4 @@
+import 'package:final_project/Employee_home_Page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -189,7 +190,7 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
 
                               Navigator.pushReplacement(
                                 context,
-                                MaterialPageRoute(builder: (context) => HomeScreen()),
+                                MaterialPageRoute(builder: (context) => EmployeeHomePage()),
                               );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(

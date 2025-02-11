@@ -1,7 +1,11 @@
+import 'package:final_project/User_Ongoing_Donation_Page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
+import 'completed_donation_page.dart'; // Import the CompletedDonationPage
+import 'user_pending_donation_page.dart'; // Import the UserPendingDonationPage
+import 'package:final_project/User_Ongoing_Donation_Page.dart';
 
 class MyDonationsPage extends StatefulWidget {
   @override
@@ -10,7 +14,15 @@ class MyDonationsPage extends StatefulWidget {
 
 class _MyDonationsPageState extends State<MyDonationsPage> {
   String userId = "";
-  List<Donation> donations = [];
+  String searchQuery = "";
+  String selectedSection = "Pending Donation"; // Default selected section
+  Map<String, List<Donation>> donationsByStatus = {
+    "Pending Donation": [],
+    "Completed Donation": [],
+    "Assigned Donation": [],
+    "Rejected Donation": [],
+    "Ongoing Donation": [], // Added Ongoing section
+  };
 
   @override
   void initState() {
@@ -38,16 +50,22 @@ class _MyDonationsPageState extends State<MyDonationsPage> {
         .collection('userDonations')
         .get();
 
-    List<Donation> donationsList = [];
+    Map<String, List<Donation>> donationsMap = {
+      "Pending Donation": [],
+      "Completed Donation": [],
+      "Assigned Donation": [],
+      "Rejected Donation": [],
+      "Ongoing Donation": [], // Added Ongoing section
+    };
+
     for (var doc in userDonationsSnapshot.docs) {
       var donationData = doc.data();
-      // Wait for the donation to be fetched with user data
       Donation donation = await Donation.fromFirestore(doc.id, donationData);
-      donationsList.add(donation);
+      donationsMap[donation.status + " Donation"]?.add(donation);
     }
 
     setState(() {
-      donations = donationsList;
+      donationsByStatus = donationsMap;
     });
   }
 
@@ -68,40 +86,121 @@ class _MyDonationsPageState extends State<MyDonationsPage> {
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          donations.isEmpty
-              ? Center(
-            child: Text(
-              "Donations Not done yet",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              decoration: InputDecoration(
+                hintText: "Search by name or ID",
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            ),
-          )
-              : Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListView.builder(
-              itemCount: donations.length,
-              itemBuilder: (context, index) {
-                var donation = donations[index];
-                return DonationCard(
-                  name: donation.name,
-                  donationId: donation.donationId,
-                  description: donation.description,
-                  location: donation.city,
-                  status: donation.status,
-                );
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
               },
             ),
-          ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: CustomBottomNavigationBar(),
-          ),
-        ],
+            SizedBox(height: 16),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: donationsByStatus.keys.map((status) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedSection = status;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            status,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: selectedSection == status
+                                  ? Color(0xFF09357F) // Persian Blue
+                                  : Colors.black54,
+                            ),
+                          ),
+                          SizedBox(height: 4), // Space between text and line
+                          if (selectedSection == status)
+                            Container(
+                              height: 2,
+                              width: 150,
+                              color: Color(0xFF09357F), // Persian Blue
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            SizedBox(height: 16),
+            Expanded(
+              child: ListView(
+                children: donationsByStatus[selectedSection]!
+                    .where((donation) =>
+                donation.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+                    donation.donationId.toLowerCase().contains(searchQuery.toLowerCase()))
+                    .map((donation) {
+                  return GestureDetector(
+                    onTap: () {
+                      // Check the status of the donation
+                      if (donation.status == 'Completed') {
+                        // Navigate to CompletedDonationPage
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CompletedDonationPage(
+                              userId: userId,
+                              donationId: donation.donationId,
+                            ),
+                          ),
+                        );
+                      } else if (donation.status == 'Ongoing') {
+                        // Navigate to CompletedDonationPage
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserOngoingDonationPage(
+                              userId: userId,
+                              donationId: donation.donationId,
+                            ),
+                          ),
+                        );
+                      }else {
+                        // Navigate to UserPendingDonationPage
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => UserPendingDonationPage(
+                              userId: userId,
+                              donationId: donation.donationId,
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: DonationCard(
+                      name: donation.name,
+                      donationId: donation.donationId,
+                      description: donation.description,
+                      location: donation.city,
+                      status: donation.status,
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -270,137 +369,6 @@ class Donation {
       description: description,
       city: city,
       status: status,
-    );
-  }
-}
-
-class CustomBottomNavigationBar extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.bottomCenter,
-      width: 300.0, // Adjust width of the bottom navigation bar
-      height: 70.0, // Adjust height to fit icons and labels
-      margin: EdgeInsets.only(bottom: 12.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.6),
-            blurRadius: 5,
-            spreadRadius: 2,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Skin-colored rectangle behind icons and text
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 115,  // Width of the rectangle
-              height: 70,  // Height of the rectangle (full height of the navigation bar)
-              decoration: BoxDecoration(
-                color: Color(0xFFFFF5E5),  // Skin color (light brown)
-                borderRadius: BorderRadius.circular(15),  // Border radius of 15
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                // Organic Store icon should not move
-                buildBottomNavItem(Icons.store, "Organic Store", Colors.grey, () {}, iconTransform: false),
-                // Home icon (navigate to HomeScreen)
-                buildHomeNavItem(context),
-                // My Donation icon should move and have fontWeight applied
-                Padding(
-                  padding: EdgeInsets.only(left: 4.5), // Adds 1px left padding to "My Donation"
-                  child: buildBottomNavItem(Icons.favorite, "My Donation", Colors.orange, () {}, iconTransform: true, fontWeight: FontWeight.w700),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildBottomNavItem(IconData icon, String label, Color color, VoidCallback onTap, {bool iconTransform = false, FontWeight fontWeight = FontWeight.normal}) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Apply translation only to the icon, based on iconTransform value
-        Transform.translate(
-          offset: iconTransform ? Offset(-2.6, -1.0) : Offset(-0.3, -1.0), // Apply -3px left translation if iconTransform is true, else no movement
-          child: IconButton(
-            icon: Icon(icon, color: color),
-            onPressed: onTap,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 3.0),
-          child: Transform.translate(
-            offset: Offset(0, -5), // Keeps the label translation unchanged
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: "cerapro",
-                fontSize: 10.0,
-                color: color,
-                fontWeight: fontWeight, // Apply fontWeight for My Donation only
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget buildHomeNavItem(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0.0), // Inner padding
-          child: Column(
-            children: [
-              Transform.translate(
-                offset: Offset(-0.6, -0.8),
-                child: IconButton(
-                  icon: Icon(Icons.home, color: Colors.grey),
-                  onPressed: () {
-                    // Navigate to HomeScreen
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => HomeScreen()), // Navigate to HomeScreen
-                    );
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3.0),
-                child: Transform.translate(
-                  offset: Offset(-0.7, -5),
-                  child: Text(
-                    "Home",
-                    style: TextStyle(
-                      fontFamily: "cerapro",
-                      fontSize: 10.0,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

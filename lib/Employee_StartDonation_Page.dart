@@ -1,16 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:final_project/Employee_start_location_Sharing_Page.dart';
 
-class EmployeeStartDonationPage extends StatelessWidget {
-  final LatLng donationLocation = LatLng(19.0760, 72.8777);
+class EmployeeStartDonationPage extends StatefulWidget {
+  final String donationId;
+  final String userId;
+
+  EmployeeStartDonationPage({required this.donationId, required this.userId});
+
+  @override
+  _EmployeeStartDonationPageState createState() => _EmployeeStartDonationPageState();
+}
+
+class _EmployeeStartDonationPageState extends State<EmployeeStartDonationPage> {
+  LatLng? donationLocation;
+  Map<String, dynamic>? donationDetails;
+  Map<String, dynamic>? userDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDonationDetails();
+  }
+
+  Future<void> _fetchDonationDetails() async {
+    try {
+      // Fetch donation details
+      DocumentSnapshot donationSnapshot = await FirebaseFirestore.instance
+          .collection('Donations')
+          .doc(widget.userId) // Parent document for the user
+          .collection('userDonations')
+          .doc(widget.donationId) // Specific donation document
+          .get();
+
+      if (donationSnapshot.exists) {
+        donationDetails = donationSnapshot.data() as Map<String, dynamic>;
+
+        // Fetch user details
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId) // Fetch user details using userId
+            .get();
+
+        if (userSnapshot.exists) {
+          userDetails = userSnapshot.data() as Map<String, dynamic>;
+        }
+
+        // Set the donation location using latitude and longitude from donation details
+        double latitude = donationDetails!['CurrentLatitude'] ?? 0.0;
+        double longitude = donationDetails!['CurrentLongitude'] ?? 0.0;
+        donationLocation = LatLng(latitude, longitude);
+      }
+    } catch (e) {
+      print("Error fetching donation details: $e");
+    }
+
+    setState(() {}); // Refresh the UI
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
+      body: donationDetails == null || userDetails == null
+          ? Center(child: CircularProgressIndicator()) // Show loading indicator
+          : SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -18,23 +75,23 @@ class EmployeeStartDonationPage extends StatelessWidget {
             _buildProfileSection(),
             _buildSectionTitle("Donation Information"),
             _buildInfoTable([
-              {"Donation ID": "gdyhgujujioikj"},
-              {"Food Category": "Dinner"},
-              {"Food Condition": "Fresh"},
-              {"Food Type": "Veg"},
-              {"Ingredient Used": "Dinner"},
-              {"Number of Servings": "25 People"},
-              {"Special Instructions": "Handle with care"},
-              {"Quantity": "400g"}
+              {"Donation ID": donationDetails!['DonationId'] ?? 'Unknown'},
+              {"Food Category": donationDetails!['FoodCategory'] ?? 'Unknown'},
+              {"Food Condition": donationDetails!['FoodCondition'] ?? 'Unknown'},
+              {"Food Type": donationDetails!['FoodType'] ?? 'Unknown'},
+              {"Ingredient Used": donationDetails!['IngredientUsed'] ?? 'Unknown'},
+              {"Number of Servings": donationDetails!['NumberOfServing']?.toString() ?? 'Unknown'},
+              {"Special Instructions": donationDetails!['SpecialInstruction'] ?? 'None'},
+              {"Quantity": donationDetails!['Quantity'] ?? 'Unknown'}
             ]),
             _buildSectionTitle("Pickup Information"),
             _buildInfoTable([
-              {"Address": "Sai Shraddha Phase 2, Hanuman Tekdi, Mumbai, Maharashtra, 400068"},
-              {"Pickup Date": "2025-01-30"},
-              {"Pickup Time Slot": "3:16 PM"},
-              {"Status": "Pending"}
+              {"Address": donationDetails!['Address'] ?? 'Unknown'},
+              {"City": donationDetails!['City'] ?? 'Unknown'},
+              {"Pickup Date": donationDetails!['PickUpDate'] ?? 'Unknown'},
+              {"Pickup Time Slot": donationDetails!['PickUpTimeSlot'] ?? 'Unknown'},
+              {"Status": donationDetails!['status'] ?? 'Unknown'}
             ]),
-
             _buildMapSection(context),
             SizedBox(height: 20),
             _buildActionButtons(),
@@ -64,7 +121,7 @@ class EmployeeStartDonationPage extends StatelessWidget {
           CircleAvatar(
             radius: 40,
             backgroundColor: Colors.red,
-            child: Text("SD", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            child: Text(donationDetails?['Name']?.substring(0, 2).toUpperCase() ?? 'U', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
           ),
           SizedBox(height: 10),
           Container(
@@ -76,11 +133,11 @@ class EmployeeStartDonationPage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                Text("Soham Dalvi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(donationDetails?['Name'] ?? 'Unknown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 5),
-                Text("EMAIL: sohamdalvi12@gmail.com"),
-                Text("Phone: +91 8591509629"),
-                Text("User ID: gdyhgujujioikj"),
+                Text("EMAIL: ${userDetails?['email'] ?? 'Unknown'}"),
+                Text("Phone: ${userDetails?['phoneNumber'] ?? 'Unknown'}"),
+                Text("User   ID: ${widget.userId}"),
               ],
             ),
           ),
@@ -151,16 +208,17 @@ class EmployeeStartDonationPage extends StatelessWidget {
                   border: Border.all(color: Colors.grey),
                 ),
                 child: FlutterMap(
-                  options: MapOptions(center: donationLocation, zoom: 13),
+                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom: 13), // Use a default value if donationLocation is null
                   children: [
                     TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: const ['a', 'b', 'c']),
                     MarkerLayer(markers: [
-                      Marker(
-                        point: donationLocation,
-                        width: 40,
-                        height: 40,
-                        child: Icon(Icons.location_pin, color: Colors.red, size: 40),
-                      ),
+                      if (donationLocation != null) // Only add marker if donationLocation is not null
+                        Marker(
+                          point: donationLocation!,
+                          width: 40,
+                          height: 40,
+                          child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        ),
                     ]),
                   ],
                 ),
@@ -206,16 +264,17 @@ class EmployeeStartDonationPage extends StatelessWidget {
                 height: MediaQuery.of(context).size.height * 0.8,
                 width: double.infinity,
                 child: FlutterMap(
-                  options: MapOptions(center: donationLocation, zoom: 13, minZoom: 5, interactiveFlags: InteractiveFlag.all),
+                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom: 13, minZoom: 5, interactiveFlags: InteractiveFlag.all),
                   children: [
                     TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: const ['a', 'b', 'c']),
                     MarkerLayer(markers: [
-                      Marker(
-                        point: donationLocation,
-                        width: 40,
-                        height: 40,
-                        child: Icon(Icons.location_pin, color: Colors.red, size: 40),
-                      ),
+                      if (donationLocation != null) // Only add marker if donationLocation is not null
+                        Marker(
+                          point: donationLocation!,
+                          width: 40,
+                          height: 40,
+                          child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        ),
                     ]),
                   ],
                 ),
@@ -241,7 +300,17 @@ class EmployeeStartDonationPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EmployeeStartLocationSharingPage(
+                    userId: widget.userId,
+                    donationId: widget.donationId,
+                  ),
+                ),
+              );
+            },
             child: Text(
               "START DONATION PROCESS",
               style: TextStyle(color: Colors.white),

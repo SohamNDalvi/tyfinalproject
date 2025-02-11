@@ -77,8 +77,44 @@ class _UserSignupPage extends State<UserSignupPage> {
           );
         }
       } catch (e) {
+        String errorText = "An error occurred.";
+
+        if (e is FirebaseAuthException && e.code == 'email-already-in-use') {
+          print("yessss");
+
+          try {
+            // Query Firestore to find the user by email
+            QuerySnapshot querySnapshot = await firestore
+                .collection('users')
+                .where('email', isEqualTo: email)
+                .get();
+
+            // Check if any document matches the email
+            if (querySnapshot.docs.isNotEmpty) {
+              // Get the user document
+              DocumentSnapshot userDoc = querySnapshot.docs.first;
+
+              String userType = userDoc.get('UserType');
+              if (userType == 'user') {
+                errorText = "This email is already registered as a User.";
+              } else if (userType == 'employee') {
+                errorText = "This email is already registered as an Employee.";
+              }
+            } else {
+              errorText = "Registering with the Email and Password...";
+            }
+          } catch (error) {
+            // Handle any other errors that may occur during the Firestore query
+            errorText = "Unable to verify account status.";
+          }
+        } else {
+          // For other errors, set a generic error message
+          errorText = e.toString();
+        }
+
+        // Update the UI with the error message
         setState(() {
-          errorMessage = e.toString();
+          errorMessage = errorText;
         });
       }
     }

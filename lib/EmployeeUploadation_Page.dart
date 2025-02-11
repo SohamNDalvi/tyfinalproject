@@ -3,15 +3,50 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:final_project/Employee_home_Page.dart';
+
 
 class EmployeeUploadationPage extends StatefulWidget {
+  final String userId;
+  final String donationId;
+
+  EmployeeUploadationPage({required this.userId, required this.donationId});
+
   @override
   _EmployeeUploadationPageState createState() => _EmployeeUploadationPageState();
 }
 
 class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
-  final LatLng donationLocation = LatLng(19.0760, 72.8777);
+  final LatLng donationLocation = LatLng(19.0760, 72.8777); // Example location
   List<File> uploadedImages = [];
+  Map<String, dynamic>? donationDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDonationDetails();
+  }
+
+  Future<void> _fetchDonationDetails() async {
+    try {
+      DocumentSnapshot donationSnapshot = await FirebaseFirestore.instance
+          .collection('Donations')
+          .doc(widget.userId) // Parent document for the user
+          .collection('userDonations')
+          .doc(widget.donationId) // Specific donation document
+          .get();
+
+      if (donationSnapshot.exists) {
+        donationDetails = donationSnapshot.data() as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print("Error fetching donation details: $e");
+    }
+
+    setState(() {}); // Refresh the UI
+  }
 
   Future<void> _pickImage() async {
     if (uploadedImages.length >= 4) return;
@@ -21,6 +56,29 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
         uploadedImages.add(File(pickedFile.path));
       });
     }
+  }
+
+  Future<void> _completeDonation() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? empuserId = prefs.getString('uid');
+
+    // Update Firestore to mark donation as completed
+    await FirebaseFirestore.instance
+        .collection('Donations')
+        .doc(widget.userId) // Parent user document
+        .collection('userDonations')
+        .doc(widget.donationId) // Specific donation document
+        .update({
+      'startLocShare': false,
+      'status': 'Completed',
+    });
+
+    print("stoplocation");
+    // Navigate to the home page after completing the donation
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => EmployeeHomePage()), // Replace with your home page
+    );
   }
 
   @override
@@ -36,21 +94,22 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
             _buildProfileSection(),
             _buildSectionTitle("Donation Information"),
             _buildInfoTable([
-              {"Donation ID": "gdyhgujujioikj"},
-              {"Food Category": "Dinner"},
-              {"Food Condition": "Fresh"},
-              {"Food Type": "Veg"},
-              {"Ingredient Used": "Dinner"},
-              {"Number of Servings": "25 People"},
-              {"Special Instructions": "Handle with care"},
-              {"Quantity": "400g"}
+              {"Donation ID": donationDetails?['DonationId'] ?? 'Unknown'},
+              {"Food Category": donationDetails?['FoodCategory'] ?? 'Unknown'},
+              {"Food Condition": donationDetails?['FoodCondition'] ?? 'Unknown'},
+              {"Food Type": donationDetails?['FoodType'] ?? 'Unknown'},
+              {"Ingredient Used": donationDetails?['IngredientUsed'] ?? 'Unknown'},
+              {"Number of Servings": donationDetails?['NumberOfServing']?.toString() ?? 'Unknown'},
+              {"Special Instructions": donationDetails?['SpecialInstruction'] ?? 'None'},
+              {"Quantity": donationDetails?['Quantity'] ?? 'Unknown'}
             ]),
             _buildSectionTitle("Pickup Information"),
             _buildInfoTable([
-              {"Address": "Sai Shraddha Phase 2, Hanuman Tekdi, Mumbai, Maharashtra, 400068"},
-              {"Pickup Date": "2025-01-30"},
-              {"Pickup Time Slot": "3:16 PM"},
-              {"Status": "Pending"}
+              {"Address": donationDetails?['Address'] ?? 'Unknown'},
+              {"City": donationDetails?['City'] ?? 'Unknown'},
+              {"Pickup Date": donationDetails?['PickUpDate'] ?? 'Unknown'},
+              {"Pickup Time Slot": donationDetails?['PickUpTimeSlot'] ?? 'Unknown'},
+              {"Status": donationDetails?['status'] ?? 'Unknown'}
             ]),
             _buildMapSection(context),
             _buildImageUploadSection(),
@@ -98,7 +157,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
                 SizedBox(height: 5),
                 Text("EMAIL: sohamdalvi12@gmail.com"),
                 Text("Phone: +91 8591509629"),
-                Text("User ID: gdyhgujujioikj"),
+                Text("User  ID: ${widget.userId}"),
               ],
             ),
           ),
@@ -186,17 +245,17 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
             ),
             SizedBox(height: 10),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlueAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(4),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.lightBlueAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-              ),
-              onPressed: () => _showMapDialog(context),
-              child: Text(
-                "Open Full Map View",
-                style: TextStyle(fontSize: 13.5),
-              ),
+                onPressed: () => _showMapDialog(context),
+                child: Text(
+                  "Open Full Map View",
+                  style: TextStyle(fontSize: 13.5),
+                ),
             ),
           ],
         ),
@@ -247,24 +306,24 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
 
   Widget _buildImageUploadSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle("Upload Images (Max 4)"),
-        Wrap(
-          spacing: 10,
-          children: uploadedImages.map((file) {
-            return ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.file(file, width: 80, height: 80, fit: BoxFit.cover),
-            );
-          }).toList(),
-        ),
-        SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: uploadedImages.length < 4 ? _pickImage : null,
-          child: Text("Upload Image"),
-        ),
-      ],
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    _buildSectionTitle("Upload Images (Max 4)"),
+    Wrap(
+    spacing: 10,
+    children: uploadedImages.map((file) {
+    return ClipRRect(
+    borderRadius: BorderRadius.circular(8),
+    child: Image.file(file, width: 80, height: 80, fit: BoxFit.cover),
+    );
+    }).toList(),
+    ),
+    SizedBox(height: 10),
+    ElevatedButton(
+    onPressed: uploadedImages.length < 4 ? _pickImage : null,
+    child: Text("Upload Image"),
+    ),
+    ],
     );
   }
 
@@ -276,7 +335,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
         style: ElevatedButton.styleFrom(
           backgroundColor: uploadedImages.isNotEmpty ? Colors.orange : Colors.grey,
         ),
-        onPressed: uploadedImages.isNotEmpty ? () {} : null,
+        onPressed: uploadedImages.isNotEmpty ? _completeDonation : null,
         child: Text("Complete Donation"),
       ),
     );
