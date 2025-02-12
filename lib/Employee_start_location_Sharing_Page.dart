@@ -23,7 +23,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
   Map<String, dynamic>? donationDetails;
   Map<String, dynamic>? userDetails;
   Timer? _locationTimer;
-  bool isSharingLocation = false; // Track if location sharing is active
+  bool isSharingLocation = false;
 
   @override
   void initState() {
@@ -37,35 +37,31 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
     if (status.isGranted) {
       // Permission granted
     } else {
-      // Handle permission denied
       print("Location permission denied");
     }
   }
 
   Future<void> _fetchDonationDetails() async {
     try {
-      // Fetch donation details
       DocumentSnapshot donationSnapshot = await FirebaseFirestore.instance
           .collection('Donations')
-          .doc(widget.userId) // Parent document for the user
+          .doc(widget.userId)
           .collection('userDonations')
-          .doc(widget.donationId) // Specific donation document
+          .doc(widget.donationId)
           .get();
 
       if (donationSnapshot.exists) {
         donationDetails = donationSnapshot.data() as Map<String, dynamic>;
 
-        // Fetch user details
         DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
             .collection('users')
-            .doc(widget.userId) // Fetch user details using userId
+            .doc(widget.userId)
             .get();
 
         if (userSnapshot.exists) {
           userDetails = userSnapshot.data() as Map<String, dynamic>;
         }
 
-        // Set the donation location using latitude and longitude from donation details
         double latitude = donationDetails!['CurrentLatitude'] ?? 0.0;
         double longitude = donationDetails!['CurrentLongitude'] ?? 0.0;
         donationLocation = LatLng(latitude, longitude);
@@ -74,55 +70,86 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
       print("Error fetching donation details: $e");
     }
 
-    setState(() {}); // Refresh the UI
+    setState(() {});
   }
 
   Future<void> _startLocationSharing() async {
-    // Update Firestore to start location sharing
     await FirebaseFirestore.instance
         .collection('Donations')
-        .doc(widget.userId) // Parent user document
+        .doc(widget.userId)
         .collection('userDonations')
-        .doc(widget.donationId) // Specific donation document
+        .doc(widget.donationId)
         .update({
       'startLocShare': true,
       'status': 'Ongoing',
     });
 
     // Start updating location every 10 seconds
-    isSharingLocation = true; // Set sharing status to true
+    isSharingLocation = true;
     _locationTimer = Timer.periodic(Duration(seconds: 10), (timer) async {
       await _updateLocation();
     });
   }
 
   Future<void> _stopLocationSharing() async {
-    // Update Firestore to stop location sharing
-    await FirebaseFirestore.instance.collection('Donations').doc(widget.userId).update({
+    await FirebaseFirestore.instance
+        .collection('Donations')
+        .doc(widget.userId)
+        .collection('userDonations')
+        .doc(widget.donationId)
+        .update({
       'startLocShare': false,
-      'status': 'Pending', // Change status as needed
+      'status': 'Ongoing',
     });
 
-    // Cancel the location update timer
     _locationTimer?.cancel();
-    isSharingLocation = false; // Set sharing status to false
     print("Location sharing stopped");
   }
 
   Future<void> _updateLocation() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? empuserId = prefs.getString('uid');
-    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-    await FirebaseFirestore.instance.collection('users').doc(empuserId).update({
-      'empCurrentLatitude': position.latitude,
-      'empCurrentLongitude': position.longitude,
-    });
-    print("Successfully updated location");
+    try {
+      // Fetch the document snapshot and await the result
+      DocumentSnapshot checkDoc = await FirebaseFirestore.instance
+          .collection('Donations')
+          .doc(widget.userId)
+          .collection('userDonations')
+          .doc(widget.donationId)
+          .get();
+
+      // Check if the document exists
+      if (!checkDoc.exists) {
+        print("Document does not exist");
+        return; // Exit the function if the document does not exist
+      }
+
+      // Get the status from the document
+      String checkStatus = checkDoc['status'];
+
+      // Check if the status is "Assigned"
+      if (checkStatus == "Ongoing") {
+        // Get the current position
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? empuserId = prefs.getString('uid');
+        Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+
+        // Update the user's location in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(empuserId).update({
+          'empCurrentLatitude': position.latitude,
+          'empCurrentLongitude': position.longitude,
+        });
+        print("Successfully updated location");
+      } else {
+        _locationTimer?.cancel();
+        print("Status is not 'Assigned', current status: $checkStatus");
+      }
+    } catch (e) {
+      print("Error updating location: $e");
+    }
   }
 
   @override
   void dispose() {
-    _locationTimer?.cancel(); // Cancel the timer when the widget is disposed
+    _locationTimer?.cancel();
     super.dispose();
   }
 
@@ -132,7 +159,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
       backgroundColor: Colors.white,
       appBar: _buildAppBar(context),
       body: donationDetails == null || userDetails == null
-          ? Center(child: CircularProgressIndicator()) // Show loading indicator
+          ? Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
@@ -143,7 +170,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
             _buildInfoTable([
               {"Donation ID": donationDetails!['DonationId'] ?? 'Unknown'},
               {"Food Category": donationDetails!['FoodCategory'] ?? 'Unknown'},
-              {"Food Condition": donationDetails!['FoodCondition'] ?? 'Unknown'},
+              {"Food Condition": donationDetails!['FoodCondition'] ?? ' Unknown'},
               {"Food Type": donationDetails!['FoodType'] ?? 'Unknown'},
               {"Ingredient Used": donationDetails!['IngredientUsed'] ?? 'Unknown'},
               {"Number of Servings": donationDetails!['NumberOfServing']?.toString() ?? 'Unknown'},
@@ -203,7 +230,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
                 SizedBox(height: 5),
                 Text("EMAIL: ${userDetails?['email'] ?? 'Unknown'}"),
                 Text("Phone: ${userDetails?['phoneNumber'] ?? 'Unknown'}"),
-                Text("User  ID: ${widget.userId}"),
+                Text("User   ID: ${widget.userId}"),
               ],
             ),
           ),
@@ -274,7 +301,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
                   border: Border.all(color: Colors.grey),
                 ),
                 child: FlutterMap(
-                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom: 13),
+                  options: MapOptions(center: donationLocation ?? LatLng(0, 0 ), zoom: 13),
                   children: [
                     TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: const ['a', 'b', 'c']),
                     MarkerLayer(markers: [
@@ -358,7 +385,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
       children: [
         SizedBox(
           width: double.infinity,
-          height: 48, // Ensures consistent height for both buttons
+          height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
@@ -367,13 +394,14 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
               ),
             ),
             onPressed: () {
-              _startLocationSharing(); // Start location sharing when button is pressed
+              _startLocationSharing();
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => EmployeeUploadationPage(
-                    userId: widget.userId, // Pass userId to the next page
-                    donationId: widget.donationId, // Pass donationId to the next page
+                    userId: widget.userId,
+                    donationId: widget.donationId,
+                    locationTimer: _locationTimer, // Pass the timer to the next page
                   ),
                 ),
               );
@@ -384,19 +412,19 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
             ),
           ),
         ),
-        SizedBox(height: 10), // Space between the buttons
+        SizedBox(height: 10),
         SizedBox(
           width: double.infinity,
-          height: 48, // Ensures consistent height for both buttons
+          height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red, // Color for stop button
+              backgroundColor: Colors.red,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
             onPressed: () {
-              _stopLocationSharingin(); // Stop location sharing when button is pressed
+              _stopLocationSharing();
             },
             child: Text(
               "STOP LOCATION SHARING",
@@ -406,17 +434,5 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
         ),
       ],
     );
-  }
-
-  Future<void> _stopLocationSharingin() async {
-    // Update Firestore to stop location sharing
-    await FirebaseFirestore.instance.collection('Donations').doc(widget.userId).update({
-      'startLocShare': false,
-      'status': 'Assigned', // Change status as needed
-    });
-
-    // Cancel the location update timer
-    _locationTimer?.cancel();
-    print("Location sharing stopped");
   }
 }

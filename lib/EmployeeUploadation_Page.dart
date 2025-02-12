@@ -6,20 +6,21 @@ import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:final_project/Employee_home_Page.dart';
-
+import 'dart:async';
 
 class EmployeeUploadationPage extends StatefulWidget {
   final String userId;
   final String donationId;
+  final Timer? locationTimer;
 
-  EmployeeUploadationPage({required this.userId, required this.donationId});
+  EmployeeUploadationPage({required this.userId, required this.donationId, this.locationTimer});
 
   @override
   _EmployeeUploadationPageState createState() => _EmployeeUploadationPageState();
 }
 
 class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
-  final LatLng donationLocation = LatLng(19.0760, 72.8777); // Example location
+  final LatLng donationLocation = LatLng(19.0760, 72.8777);
   List<File> uploadedImages = [];
   Map<String, dynamic>? donationDetails;
 
@@ -33,9 +34,9 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
     try {
       DocumentSnapshot donationSnapshot = await FirebaseFirestore.instance
           .collection('Donations')
-          .doc(widget.userId) // Parent document for the user
+          .doc(widget.userId)
           .collection('userDonations')
-          .doc(widget.donationId) // Specific donation document
+          .doc(widget.donationId)
           .get();
 
       if (donationSnapshot.exists) {
@@ -45,7 +46,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
       print("Error fetching donation details: $e");
     }
 
-    setState(() {}); // Refresh the UI
+    setState(() {});
   }
 
   Future<void> _pickImage() async {
@@ -59,25 +60,27 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
   }
 
   Future<void> _completeDonation() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? empuserId = prefs.getString('uid');
-
-    // Update Firestore to mark donation as completed
     await FirebaseFirestore.instance
         .collection('Donations')
-        .doc(widget.userId) // Parent user document
+        .doc(widget.userId)
         .collection('userDonations')
-        .doc(widget.donationId) // Specific donation document
+        .doc(widget.donationId)
         .update({
       'startLocShare': false,
       'status': 'Completed',
     });
 
-    print("stoplocation");
-    // Navigate to the home page after completing the donation
+    if (widget.locationTimer == null) {
+      print('timer is null');
+    } else {
+      print('timer is not null');
+      widget.locationTimer?.cancel(); // Cancel the timer when donation is completed
+      print("Location sharing stopped");
+    }
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => EmployeeHomePage()), // Replace with your home page
+      MaterialPageRoute(builder: (context) => EmployeeHomePage()),
     );
   }
 
@@ -157,7 +160,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
                 SizedBox(height: 5),
                 Text("EMAIL: sohamdalvi12@gmail.com"),
                 Text("Phone: +91 8591509629"),
-                Text("User  ID: ${widget.userId}"),
+                Text("User    ID: ${widget.userId}"),
               ],
             ),
           ),
@@ -245,17 +248,17 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
             ),
             SizedBox(height: 10),
             ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.lightBlueAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
                 ),
-                onPressed: () => _showMapDialog(context),
-                child: Text(
-                  "Open Full Map View",
-                  style: TextStyle(fontSize: 13.5),
-                ),
+              ),
+              onPressed: () => _showMapDialog(context),
+              child: Text(
+                "Open Full Map View",
+                style: TextStyle(fontSize: 13.5),
+              ),
             ),
           ],
         ),
@@ -306,26 +309,8 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
 
   Widget _buildImageUploadSection() {
     return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    _buildSectionTitle("Upload Images (Max 4)"),
-    Wrap(
-    spacing: 10,
-    children: uploadedImages.map((file) {
-    return ClipRRect(
-    borderRadius: BorderRadius.circular(8),
-    child: Image.file(file, width: 80, height: 80, fit: BoxFit.cover),
-    );
-    }).toList(),
-    ),
-    SizedBox(height: 10),
-    ElevatedButton(
-    onPressed: uploadedImages.length < 4 ? _pickImage : null,
-    child: Text("Upload Image"),
-    ),
-    ],
-    );
-  }
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [ _buildSectionTitle("Upload Images (Max 4)"), Wrap( spacing: 10, children: uploadedImages.map((file) { return ClipRRect( borderRadius: BorderRadius.circular(8), child: Image.file(file, width: 80, height: 80, fit: BoxFit.cover), ); }).toList(), ), SizedBox(height: 10), ElevatedButton( onPressed: uploadedImages.length < 4 ? _pickImage : null, child: Text("Upload Image "), ), ], ); }
 
   Widget _buildActionButtons() {
     return SizedBox(
