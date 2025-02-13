@@ -140,7 +140,7 @@ class _EmployeeStartLocationSharingPageState extends State<EmployeeStartLocation
         print("Successfully updated location");
       } else {
         _locationTimer?.cancel();
-        print("Status is not 'Assigned', current status: $checkStatus");
+        print("Status is not 'Ongoing', current status: $checkStatus");
       }
     } catch (e) {
       print("Error updating location: $e");

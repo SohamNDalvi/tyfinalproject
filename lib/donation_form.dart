@@ -222,6 +222,7 @@ class _DonationFormState extends State<DonationForm> {
       'status': 'Pending', // Default status
       'assignedEmployeeId':' ',
       'startLocShare': false,
+      'FoodCollected': false,
       'createdAt': FieldValue.serverTimestamp(), // Timestamp for creation
     };
 

@@ -1,33 +1,62 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:final_project/Employee_home_Page.dart';
-import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 
 class EmployeeUploadationPage extends StatefulWidget {
   final String userId;
   final String donationId;
-  final Timer? locationTimer;
+  final Timer? locationTimer; // Accept the locationTimer
 
-  EmployeeUploadationPage({required this.userId, required this.donationId, this.locationTimer});
+  EmployeeUploadationPage({required this.userId, required this.donationId, this.locationTimer}); // Update constructor
 
   @override
   _EmployeeUploadationPageState createState() => _EmployeeUploadationPageState();
 }
 
 class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
-  final LatLng donationLocation = LatLng(19.0760, 72.8777);
-  List<File> uploadedImages = [];
+  LatLng? donationLocation;
   Map<String, dynamic>? donationDetails;
+  Map<String, dynamic>? userDetails;
+  Timer? _locationTimer;
+  List<File> uploadedImages = [];
 
   @override
   void initState() {
     super.initState();
     _fetchDonationDetails();
+    _requestLocationPermission();
+  }
+
+  Future<void> _requestLocationPermission() async {
+    var status = await Permission.location.request();
+    if (status.isGranted) {
+      // Permission granted
+    } else {
+      print("Location permission denied");
+    }
+  }
+
+  Future<void> _openGoogleMaps() async {
+    if (donationDetails != null) {
+      double latitude = donationDetails!['CurrentLatitude'] ?? 0.0;
+      double longitude = donationDetails!['CurrentLongitude'] ?? 0.0;
+      String url = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+
+      if (await canLaunch(url)) {
+        await launch(url);
+      } else {
+        throw 'Could not launch $url';
+      }
+    }
   }
 
   Future<void> _fetchDonationDetails() async {
@@ -41,6 +70,19 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
 
       if (donationSnapshot.exists) {
         donationDetails = donationSnapshot.data() as Map<String, dynamic>;
+
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get();
+
+        if (userSnapshot.exists) {
+          userDetails = userSnapshot.data() as Map<String, dynamic>;
+        }
+
+        double latitude = donationDetails!['CurrentLatitude'] ?? 0.0;
+        double longitude = donationDetails!['CurrentLongitude'] ?? 0.0;
+        donationLocation = LatLng(latitude, longitude);
       }
     } catch (e) {
       print("Error fetching donation details: $e");
@@ -59,6 +101,21 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
     }
   }
 
+  Future<void> _stopLocationSharing() async {
+    await FirebaseFirestore.instance
+        .collection('Donations')
+        .doc(widget.userId)
+        .collection('userDonations')
+        .doc(widget.donationId)
+        .update({
+      'startLocShare': false,
+      'status': 'Completed', // Adjust this based on your logic
+    });
+
+    _locationTimer?.cancel(); // Cancel the timer if it's running
+    print("Location sharing stopped");
+  }
+
   Future<void> _completeDonation() async {
     await FirebaseFirestore.instance
         .collection('Donations')
@@ -70,17 +127,26 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
       'status': 'Completed',
     });
 
-    if (widget.locationTimer == null) {
-      print('timer is null');
-    } else {
-      print('timer is not null');
-      widget.locationTimer?.cancel(); // Cancel the timer when donation is completed
-      print("Location sharing stopped");
-    }
+    _stopLocationSharing(); // Ensure the timer is stopped here
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => EmployeeHomePage()),
+    );
+  }
+
+  Future<void> _markDonationCollected() async {
+    await FirebaseFirestore.instance
+        .collection('Donations')
+        .doc(widget.userId)
+        .collection('userDonations')
+        .doc(widget.donationId)
+        .update({
+      'FoodCollected': true,
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Donation marked as collected")),
     );
   }
 
@@ -89,7 +155,9 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
+      body: donationDetails == null || userDetails == null
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,27 +165,29 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
             _buildProfileSection(),
             _buildSectionTitle("Donation Information"),
             _buildInfoTable([
-              {"Donation ID": donationDetails?['DonationId'] ?? 'Unknown'},
-              {"Food Category": donationDetails?['FoodCategory'] ?? 'Unknown'},
-              {"Food Condition": donationDetails?['FoodCondition'] ?? 'Unknown'},
-              {"Food Type": donationDetails?['FoodType'] ?? 'Unknown'},
-              {"Ingredient Used": donationDetails?['IngredientUsed'] ?? 'Unknown'},
-              {"Number of Servings": donationDetails?['NumberOfServing']?.toString() ?? 'Unknown'},
-              {"Special Instructions": donationDetails?['SpecialInstruction'] ?? 'None'},
-              {"Quantity": donationDetails?['Quantity'] ?? 'Unknown'}
+              {"Donation ID": donationDetails!['DonationId'] ?? 'Unknown'},
+              {"Food Category": donationDetails!['FoodCategory'] ?? 'Unknown'},
+              {"Food Condition": donationDetails!['FoodCondition'] ?? 'Unknown'},
+              {"Food Type": donationDetails!['FoodType'] ?? 'Unknown'},
+              {"Ingredient Used": donationDetails!['IngredientUsed'] ?? 'Unknown'},
+              {"Number of Servings": donationDetails!['NumberOfServing']?.toString() ?? 'Unknown'},
+              {"Special Instructions": donationDetails!['SpecialInstruction'] ?? 'None'},
+              {"Quantity": donationDetails!['Quantity'] ?? 'Unknown'}
             ]),
             _buildSectionTitle("Pickup Information"),
             _buildInfoTable([
-              {"Address": donationDetails?['Address'] ?? 'Unknown'},
-              {"City": donationDetails?['City'] ?? 'Unknown'},
-              {"Pickup Date": donationDetails?['PickUpDate'] ?? 'Unknown'},
-              {"Pickup Time Slot": donationDetails?['PickUpTimeSlot'] ?? 'Unknown'},
-              {"Status": donationDetails?['status'] ?? 'Unknown'}
+              {"Address": donationDetails!['Address'] ?? 'Unknown'},
+              {"City": donationDetails!['City'] ?? 'Unknown'},
+              {"Pickup Date": donationDetails!['PickUpDate'] ?? 'Unknown'},
+              {"Pickup Time Slot": donationDetails!['PickUpTimeSlot'] ?? 'Unknown'},
+              {"Status": donationDetails!['status'] ?? 'Unknown'}
             ]),
             _buildMapSection(context),
             _buildImageUploadSection(),
             SizedBox(height: 20),
             _buildActionButtons(),
+            SizedBox(height: 20),
+            _buildDonationCollectedButton(),
             SizedBox(height: 30),
           ],
         ),
@@ -144,7 +214,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
           CircleAvatar(
             radius: 40,
             backgroundColor: Colors.red,
-            child: Text("SD", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+            child: Text(donationDetails!['Name']?.substring(0, 2).toUpperCase() ?? 'U', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
           ),
           SizedBox(height: 10),
           Container(
@@ -156,11 +226,11 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
             ),
             child: Column(
               children: [
-                Text("Soham Dalvi", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(donationDetails!['Name'] ?? 'Unknown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 5),
-                Text("EMAIL: sohamdalvi12@gmail.com"),
-                Text("Phone: +91 8591509629"),
-                Text("User    ID: ${widget.userId}"),
+                Text("EMAIL: ${userDetails?['email'] ?? 'Unknown'}"),
+                Text("Phone: ${userDetails?['phoneNumber'] ?? 'Unknown'}"),
+                Text("User   ID: ${widget.userId}"),
               ],
             ),
           ),
@@ -231,16 +301,17 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
                   border: Border.all(color: Colors.grey),
                 ),
                 child: FlutterMap(
-                  options: MapOptions(center: donationLocation, zoom: 13),
+                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom:  13),
                   children: [
                     TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: const ['a', 'b', 'c']),
                     MarkerLayer(markers: [
-                      Marker(
-                        point: donationLocation,
-                        width: 40,
-                        height: 40,
-                        child: Icon(Icons.location_pin, color: Colors.red, size: 40),
-                      ),
+                      if (donationLocation != null)
+                        Marker(
+                          point: donationLocation!,
+                          width: 40,
+                          height: 40,
+                          child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        ),
                     ]),
                   ],
                 ),
@@ -286,16 +357,17 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
                 height: MediaQuery.of(context).size.height * 0.8,
                 width: double.infinity,
                 child: FlutterMap(
-                  options: MapOptions(center: donationLocation, zoom: 13, minZoom: 5, interactiveFlags: InteractiveFlag.all),
+                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom: 13, minZoom: 5, interactiveFlags: InteractiveFlag.all),
                   children: [
                     TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: const ['a', 'b', 'c']),
                     MarkerLayer(markers: [
-                      Marker(
-                        point: donationLocation,
-                        width: 40,
-                        height: 40,
-                        child: Icon(Icons.location_pin, color: Colors.red, size: 40),
-                      ),
+                      if (donationLocation != null)
+                        Marker(
+                          point: donationLocation!,
+                          width: 40,
+                          height: 40,
+                          child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        ),
                     ]),
                   ],
                 ),
@@ -309,20 +381,71 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
 
   Widget _buildImageUploadSection() {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [ _buildSectionTitle("Upload Images (Max 4)"), Wrap( spacing: 10, children: uploadedImages.map((file) { return ClipRRect( borderRadius: BorderRadius.circular(8), child: Image.file(file, width: 80, height: 80, fit: BoxFit.cover), ); }).toList(), ), SizedBox(height: 10), ElevatedButton( onPressed: uploadedImages.length < 4 ? _pickImage : null, child: Text("Upload Image "), ), ], ); }
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle("Upload Images (Max 4)"),
+        Wrap(
+          spacing: 10,
+          children: uploadedImages.map((file) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(file, width: 80, height: 80, fit: BoxFit.cover),
+            );
+          }).toList(),
+        ),
+        SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: uploadedImages.length < 4 ? _pickImage : null,
+          child: Text("Upload Image "),
+        ),
+      ],
+    );
+  }
 
   Widget _buildActionButtons() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: uploadedImages.isNotEmpty ? Colors.orange : Colors.grey,
+            ),
+            onPressed: uploadedImages.isNotEmpty ? _completeDonation : null,
+            child: Text("Complete Donation"),
+          ),
+        ),
+        SizedBox(height: 10),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: _openGoogleMaps,
+            child: Text("Open in Google Maps"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDonationCollectedButton() {
     return SizedBox(
       width: double.infinity,
       height: 48,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: uploadedImages.isNotEmpty ? Colors.orange : Colors.grey,
+          backgroundColor: Colors.green,
         ),
-        onPressed: uploadedImages.isNotEmpty ? _completeDonation : null,
-        child: Text("Complete Donation"),
+        onPressed: _markDonationCollected,
+        child: Text("Donation Collected"),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _locationTimer?.cancel();
+    super.dispose();
   }
 }

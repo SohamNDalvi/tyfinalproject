@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
+import 'dart:math';
 
 class UserOngoingDonationPage extends StatefulWidget {
   final String userId;
@@ -29,6 +30,9 @@ String? routeError;
 
 final LatLng defaultEmployeeLocation = LatLng(19.0760, 72.8777); // Mumbai
 final LatLng defaultUserLocation = LatLng(18.5204, 73.8567); // Pune
+
+String? estimatedTime;
+String? statusMessage;
 
 @override
 void initState() {
@@ -122,6 +126,9 @@ employeeDoc['empCurrentLongitude'] ?? defaultEmployeeLocation.longitude,
 );
 });
 print("Updated employee location: $employeeLocation");
+
+// Calculate distance and update status
+_updateStatus();
 }
 } else {
 if (mounted) {
@@ -131,6 +138,55 @@ employeeLocation = defaultEmployeeLocation;
 print("Employee document not found. Using default location: $defaultEmployeeLocation");
 }
 }
+}
+
+void _updateStatus() {
+  if (userLocation != null && employeeLocation != null) {
+    double currentDistance = _calculateDistance(userLocation!, employeeLocation!);
+    estimatedTime = _calculateEstimatedTime(currentDistance);
+
+    // Check if the food has been collected
+    bool isFoodCollected = donationDetails?['FoodCollected'] ?? false;
+    print("FoodCollected status: $isFoodCollected");
+
+    if (isFoodCollected) {
+      // If food is collected, set the status message
+      statusMessage = "Food is Collected Thank you For Donation, You can Track your Donation Process Further";
+      estimatedTime = null; // Clear estimated time
+    } else {
+      // If food is not collected, update status message based on distance
+      if (currentDistance < 0.2) { // Adjust threshold as needed
+        statusMessage = "Volunteer reached your location. He will come in few minutes.";
+      } else {
+        statusMessage = null; // Clear message if not close
+      }
+    }
+
+    setState(() {});
+  }
+}
+
+double _calculateDistance(LatLng start, LatLng end) {
+const double earthRadius = 6371; // Radius of the Earth in kilometers
+double dLat = _degreesToRadians(end.latitude - start.latitude);
+double dLon = _degreesToRadians(end.longitude - start.longitude);
+double a =
+sin(dLat / 2) * sin(dLat / 2) +
+cos(_degreesToRadians(start.latitude)) * cos(_degreesToRadians(end.latitude)) *
+sin(dLon / 2) * sin(dLon / 2);
+double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+return earthRadius * c; // Distance in kilometers
+}
+
+double _degreesToRadians(double degrees) {
+return degrees * (3.141592653589793 / 180);
+}
+
+String _calculateEstimatedTime(double distance) {
+const double walkingSpeed = 5.0; // Average walking speed in km/h
+double timeInHours = distance / walkingSpeed;
+int minutes = (timeInHours * 60).round();
+return "$minutes minutes";
 }
 
 Future<void> _handleTrackDonation() async {
@@ -272,7 +328,7 @@ radius: 40,
 backgroundColor: Colors.red,
 child: Text(
 donationDetails?['Name']?.substring(0, 2).toUpperCase() ?? 'U',
-style: TextStyle(color: Colors.white, fontSize: 24 , fontWeight: FontWeight.bold),
+style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
 ),
 ),
 SizedBox(height: 10),
@@ -369,6 +425,22 @@ strokeWidth: 2.0,
 ],
 ),
 ],
+),
+),
+if (statusMessage != null)
+Padding(
+padding: const EdgeInsets.all(8.0),
+child: Text(
+statusMessage!,
+style: TextStyle(color: Colors.green, fontSize: 16),
+),
+),
+if (estimatedTime != null)
+Padding(
+padding: const EdgeInsets.all(8.0),
+child: Text(
+"Estimated time: $estimatedTime",
+style: TextStyle(color: Colors.blue, fontSize: 16),
 ),
 ),
 ],
