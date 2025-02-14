@@ -223,6 +223,7 @@ class _DonationFormState extends State<DonationForm> {
       'assignedEmployeeId':' ',
       'startLocShare': false,
       'FoodCollected': false,
+      'DonationImages': [],
       'createdAt': FieldValue.serverTimestamp(), // Timestamp for creation
     };
 

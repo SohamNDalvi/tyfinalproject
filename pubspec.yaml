@@ -56,6 +56,7 @@ dependencies:
   geocoding: ^3.0.0
   permission_handler: ^10.0.0
   url_launcher: ^6.0.20
+  appwrite: ^14.0.0
 
 
 dev_dependencies:

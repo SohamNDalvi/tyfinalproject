@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart'; // Import image_picker
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:appwrite/appwrite.dart'; // Appwrite SDK import
 
 class EmpGetDetailsScreen extends StatefulWidget {
   const EmpGetDetailsScreen({super.key});
@@ -21,6 +22,7 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
   File? profileImage;
   String? documentPath;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool isLoading = false; // Track loading state
 
   final TextEditingController dobController = TextEditingController();
   final TextEditingController firstNameController = TextEditingController();
@@ -29,6 +31,21 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
 
   final ImagePicker _picker = ImagePicker(); // Initialize image picker
 
+  late Client client;
+  late Storage storage;
+  late Account account;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize Appwrite client
+    client = Client()
+        .setEndpoint('https://cloud.appwrite.io/v1') // Your Appwrite endpoint
+        .setProject('beone10103');  // Set your Project ID
+
+    storage = Storage(client);
+    account = Account(client);
+  }
 
   Future<void> _takeProfilePicture() async {
     final XFile? pickedFile = await _picker.pickImage(
@@ -52,10 +69,20 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
     }
   }
 
+  Future<String> _uploadFile(File file, String bucketId) async {
+    final inputFile = InputFile.fromPath(path: file.path); // Correct usage
+    final result = await storage.createFile(
+      bucketId: bucketId,
+      fileId: 'unique()',
+      file: inputFile,
+    );
+    return result.$id; // Return the file ID after upload
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async => false,
+      onWillPop: () async => !isLoading, // Prevent back navigation if loading
       child: Scaffold(
         body: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -151,7 +178,7 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 20 ),
                   ElevatedButton(
                     onPressed: _takeProfilePicture,
                     child: Text(profileImage == null ? "Take Profile Picture" : "Profile Picture Taken"),
@@ -173,28 +200,48 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {
+                      onPressed: isLoading ? null : () async { // Disable button if loading
                         if (_formKey.currentState!.validate()) {
                           if (termsAccepted) {
                             SharedPreferences prefs = await SharedPreferences.getInstance();
                             String? userId = prefs.getString('uid');
 
                             if (userId != null) {
+                              setState(() {
+                                isLoading = true; // Show loading state
+                              });
+
+                              // Upload files to Appwrite
+                              String profilePicId = await _uploadFile(profileImage!, 'employees_profiles10103');
+                              String documentId = await _uploadFile(File(documentPath!), 'employees_documents10103');
+
+                              // Store details in Appwrite or Firestore
+                              try{
                               await FirebaseFirestore.instance.collection('users').doc(userId).set({
                                 'firstName': firstNameController.text,
                                 'lastName': lastNameController.text,
                                 'dob': dobController.text,
                                 'gender': gender,
                                 'phoneNumber': phoneNumberController.text,
+                                'IsApprove':false,
+                                'profilepic': profilePicId,
+                                'document': documentId,
                               }, SetOptions(merge: true));
-
+                              print(profilePicId);
+                              print(documentId);
+                              print("Successful transfer");
+                              }
+                              catch(e){
+                                print("Unsuccessful transfer");
+                              }
+                              // Navigate to the next page
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(builder: (context) => EmployeeHomePage()),
                               );
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('User ID not found.')),
+                                const SnackBar(content: Text('User  ID not found.')),
                               );
                             }
                           } else {
@@ -205,7 +252,9 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                      child: const Text("Next"),
+                      child: isLoading
+                          ? CircularProgressIndicator(color: Colors.white) // Show loading indicator
+                          : const Text("Next"),
                     ),
                   ),
                 ],
@@ -218,6 +267,7 @@ class _EmpGetDetailsScreenState extends State<EmpGetDetailsScreen> {
   }
 }
 
+// Custom text field widget
 class CustomTextField extends StatelessWidget {
   final String hintText;
   final IconData icon;
@@ -248,6 +298,7 @@ class CustomTextField extends StatelessWidget {
   }
 }
 
+// Gender selection widget
 class GenderSelector extends StatelessWidget {
   final String? selectedGender;
   final ValueChanged<String?> onChanged;
@@ -271,34 +322,37 @@ class GenderSelector extends StatelessWidget {
           children: [
             RadioOption(value: "male", groupValue: selectedGender, label: "Male", onChanged: onChanged),
             RadioOption(value: "female", groupValue: selectedGender, label: "Female", onChanged: onChanged),
-            RadioOption(value: "other", groupValue: selectedGender, label: "Other", onChanged: onChanged),
           ],
         ),
       ],
     );
   }
-
 }
 
+// Radio option widget for gender selection
 class RadioOption extends StatelessWidget {
   final String value;
   final String? groupValue;
   final String label;
-  final void Function(String?) onChanged;
+  final ValueChanged<String?> onChanged;
 
   const RadioOption({
-    super.key,
     required this.value,
     required this.groupValue,
     required this.label,
     required this.onChanged,
   });
+
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Radio<String>(value: value, groupValue: groupValue, onChanged: onChanged),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        Radio<String>(
+          value: value,
+          groupValue: groupValue,
+          onChanged: onChanged,
+        ),
+        Text(label),
       ],
     );
   }

@@ -12,6 +12,7 @@ import 'user_signup_page.dart';
 import 'user_login_page.dart';
 import 'package:final_project/Employee_home_Page.dart';
 import 'admin_home_page.dart'; // Import the AdminHomePage
+import 'emp_signup_page.dart';
 
 class EmpLoginPage extends StatefulWidget {
   const EmpLoginPage({Key? key}) : super(key: key);
@@ -148,7 +149,7 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
           if (userType == 'employee') {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
+              MaterialPageRoute(builder: (context) => EmployeeHomePage()),
             );
           } else if (userType == 'admin') {
             Navigator.push(
@@ -420,7 +421,7 @@ class _EmpLoginPageState extends State<EmpLoginPage> {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const UserSignupPage()),
+                              MaterialPageRoute(builder: (context) => const EmpSignupPage()),
                             );
                           },
                           child: const Text(

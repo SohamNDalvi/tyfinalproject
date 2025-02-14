@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'user_login_page.dart'; // Ensure this path is correct
+import 'package:final_project/EmpMyDocuments.dart';
 
 class EmployeeAccountScreen extends StatefulWidget {
   const EmployeeAccountScreen({super.key});
@@ -288,7 +289,12 @@ class _EmployeeAccountScreenState extends State<EmployeeAccountScreen> {
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {
-                      // Handle My Documents button
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => EmpMyDocuments(),
+                        ),
+                      );
                     },
                   ),
                   const Divider(height: 1),

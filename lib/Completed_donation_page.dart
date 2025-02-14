@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:appwrite/appwrite.dart'; // Import Appwrite SDK
 
 class CompletedDonationPage extends StatefulWidget {
   final String donationId; // Define the donationId parameter
   final String userId;
-  CompletedDonationPage({required this.userId,required this.donationId}); // Constructor
+
+  CompletedDonationPage({required this.userId, required this.donationId}); // Constructor
 
   @override
   _CompletedDonationPageState createState() => _CompletedDonationPageState();
@@ -14,13 +16,7 @@ class CompletedDonationPage extends StatefulWidget {
 class _CompletedDonationPageState extends State<CompletedDonationPage> {
   int _currentIndex = 0; // Track active image
   Map<String, dynamic>? donationDetails;
-
-  final List<String> imagePaths = [
-    "assets/images/sponsor_banner1.jpg",
-    "assets/images/sponsor_banner2.png",
-    "assets/images/sponsor_banner3.png",
-    "assets/images/sponsor_banner4.png",
-  ];
+  List<String> imageUrls = []; // List to hold image URLs
 
   @override
   void initState() {
@@ -29,9 +25,7 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
   }
 
   Future<void> fetchDonationDetails() async {
-
     try {
-      print("Printing , $this.donationId");
       DocumentSnapshot donationSnapshot = await FirebaseFirestore.instance
           .collection('Donations')
           .doc(widget.userId)
@@ -43,6 +37,10 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
         setState(() {
           donationDetails = donationSnapshot.data() as Map<String, dynamic>;
         });
+
+        // Fetch the DonationImages array
+        List<String> donationImageIds = List<String>.from(donationDetails!['DonationImages'] ?? []);
+        await fetchImagesFromAppwrite(donationImageIds);
       } else {
         setState(() {
           donationDetails = {}; // Set empty map to prevent null errors
@@ -54,6 +52,17 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
       });
       print("Error fetching donation details: $e");
     }
+  }
+
+  Future<void> fetchImagesFromAppwrite(List<String> imageIds) async {
+    List<String> urls = [];
+    for (String id in imageIds) {
+      String url = 'https://cloud.appwrite.io/v1/storage/buckets/donation_photos10103/files/$id/view?project=beone10103';
+      urls.add(url);
+    }
+    setState(() {
+      imageUrls = urls; // Update the state with the fetched image URLs
+    });
   }
 
   @override
@@ -124,7 +133,7 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 5),
-                        Text("User  ID: ${donationDetails!['userID'] ?? 'N/A'}"),
+                        Text("User   ID: ${donationDetails!['userID'] ?? 'N/A'}"),
                       ],
                     ),
                   ),
@@ -164,21 +173,21 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
               children: [
                 CarouselSlider(
                   options: CarouselOptions(
-                    height: 150, // Carousel Height
+                    height: 200, // Carousel Height
                     autoPlay: true, // Auto-scroll every 4 seconds
                     autoPlayInterval: Duration(seconds: 4),
                     enlargeCenterPage: true,
-                    viewportFraction: 0.9,
+                    viewportFraction: 1,
                     onPageChanged: (index, reason) {
                       setState(() {
                         _currentIndex = index;
                       });
                     },
                   ),
-                  items: imagePaths.map((imagePath) {
+                  items: imageUrls.map((imageUrl) {
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(10),
-                      child: Image.asset(imagePath, fit: BoxFit.cover, width: double.infinity),
+                      child: Image.network(imageUrl, fit: BoxFit.cover, width: double.infinity),
                     );
                   }).toList(),
                 ),
@@ -187,7 +196,7 @@ class _CompletedDonationPageState extends State<CompletedDonationPage> {
                 SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: imagePaths.asMap().entries.map((entry) {
+                  children: imageUrls.asMap().entries.map((entry) {
                     int index = entry.key;
                     return Container(
                       width: 8,

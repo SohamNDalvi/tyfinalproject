@@ -5,11 +5,12 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as permission_handler; // Use alias
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:final_project/Employee_home_Page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:appwrite/appwrite.dart'; // Import Appwrite SDK
 
 class EmployeeUploadationPage extends StatefulWidget {
   final String userId;
@@ -28,16 +29,26 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
   Map<String, dynamic>? userDetails;
   Timer? _locationTimer;
   List<File> uploadedImages = [];
+  late Client client;
+  late Storage storage;
 
   @override
   void initState() {
     super.initState();
+    _initializeAppwrite();
     _fetchDonationDetails();
     _requestLocationPermission();
   }
 
+  void _initializeAppwrite() {
+    client = Client()
+        .setEndpoint('https://cloud.appwrite.io/v1') // Your Appwrite endpoint
+        .setProject('beone10103'); // Your Appwrite project ID
+    storage = Storage(client);
+  }
+
   Future<void> _requestLocationPermission() async {
-    var status = await Permission.location.request();
+    var status = await permission_handler.Permission.location.request(); // Use alias
     if (status.isGranted) {
       // Permission granted
     } else {
@@ -101,6 +112,25 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
     }
   }
 
+  Future<List<String>> _uploadImages() async { // Change return type to Future<List<String>>
+    List<String> imageIds = [];
+    for (File image in uploadedImages) {
+      String imageId = await _uploadFile(image, 'donation_photos10103');
+      imageIds.add(imageId);
+    }
+    return imageIds; // Return the list of image IDs
+  }
+
+  Future<String> _uploadFile(File file, String bucketId) async {
+    final inputFile = InputFile.fromPath(path: file.path); // Correct usage
+    final result = await storage.createFile(
+      bucketId: bucketId,
+      fileId: 'unique()',
+      file: inputFile,
+    );
+    return result.$id; // Return the file ID after upload
+  }
+
   Future<void> _stopLocationSharing() async {
     await FirebaseFirestore.instance
         .collection('Donations')
@@ -117,6 +147,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
   }
 
   Future<void> _completeDonation() async {
+    List<String> imageIds = await _uploadImages(); // Upload images and get their IDs
     await FirebaseFirestore.instance
         .collection('Donations')
         .doc(widget.userId)
@@ -125,6 +156,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
         .update({
       'startLocShare': false,
       'status': 'Completed',
+      'DonationImages': imageIds, // Store the image IDs in Firestore as an array
     });
 
     _stopLocationSharing(); // Ensure the timer is stopped here
@@ -229,7 +261,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
                 Text(donationDetails!['Name'] ?? 'Unknown', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 SizedBox(height: 5),
                 Text("EMAIL: ${userDetails?['email'] ?? 'Unknown'}"),
-                Text("Phone: ${userDetails?['phoneNumber'] ?? 'Unknown'}"),
+                Text("Phone : ${userDetails?['phoneNumber'] ?? 'Unknown'}"),
                 Text("User   ID: ${widget.userId}"),
               ],
             ),
@@ -301,7 +333,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
                   border: Border.all(color: Colors.grey),
                 ),
                 child: FlutterMap(
-                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom:  13),
+                  options: MapOptions(center: donationLocation ?? LatLng(0, 0), zoom: 13),
                   children: [
                     TileLayer(urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", subdomains: const ['a', 'b', 'c']),
                     MarkerLayer(markers: [
