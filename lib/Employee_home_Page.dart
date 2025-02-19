@@ -27,6 +27,31 @@ class _EmployeeHomePageState extends State<EmployeeHomePage> {
     super.initState();
     _getUserId();
     _requestLocationPermission();
+    updateUserFCMToken();
+  }
+
+  Future<void> updateUserFCMToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('uid');
+    String? fcmToken = prefs.getString('fcm_token');
+
+    // Check if userId and fcmToken are valid
+    if (userId == null || userId.isEmpty) {
+      print('❌ No userId found in SharedPreferences');
+      return; // Exit if userId is not valid
+    }
+
+    if (fcmToken == null || fcmToken.isEmpty) {
+      print('❌ No FCM token found in SharedPreferences');
+      return; // Exit if fcmToken is not valid
+    }
+
+    // If both userId and fcmToken are valid, update Firestore
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      'userFcmToken': fcmToken,
+    }, SetOptions(merge: true)); // Use merge to create or update the field
+
+    print('✅ FCM token updated successfully for user: $userId');
   }
 
   Future<void> _getUserId() async {

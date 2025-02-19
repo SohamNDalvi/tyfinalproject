@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math'; // Import for random number generation
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -10,7 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:final_project/Employee_home_Page.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:appwrite/appwrite.dart'; // Import Appwrite SDK
+import 'package:appwrite/appwrite.dart';
+
 
 class EmployeeUploadationPage extends StatefulWidget {
   final String userId;
@@ -132,6 +134,7 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
   }
 
   Future<void> _stopLocationSharing() async {
+    print("Hello doing completed donation here");
     await FirebaseFirestore.instance
         .collection('Donations')
         .doc(widget.userId)
@@ -146,6 +149,12 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
     print("Location sharing stopped");
   }
 
+  String generateCouponCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    Random random = Random();
+    return List.generate(8, (index) => chars[random.nextInt(chars.length)]).join();
+  }
+
   Future<void> _completeDonation() async {
     List<String> imageIds = await _uploadImages(); // Upload images and get their IDs
     await FirebaseFirestore.instance
@@ -157,6 +166,29 @@ class _EmployeeUploadationPageState extends State<EmployeeUploadationPage> {
       'startLocShare': false,
       'status': 'Completed',
       'DonationImages': imageIds, // Store the image IDs in Firestore as an array
+    });
+
+    // Reference the parent document in the 'Rewards' collection
+    DocumentReference userRewardsDoc = FirebaseFirestore.instance.collection('Rewards').doc(widget.userId);
+
+    // Create rewards collection for the user if it doesn't exist
+    await userRewardsDoc.set({
+      'createdAt': FieldValue.serverTimestamp(), // Timestamp when the document was created
+    }, SetOptions(merge: true)); // Merge to avoid overwriting if the document already exists
+
+    // Generate coupon code
+    String couponCode = generateCouponCode();
+    DateTime now = DateTime.now();
+    DateTime dueDate = now.add(Duration(days: 30)); // Due date is 30 days from now
+
+    // Create coupon code subcollection
+    await userRewardsDoc.collection('CouponCodes').doc(couponCode).set({
+      'couponCode': couponCode,
+      'startDate': now.toIso8601String(),
+      'dueDate': dueDate.toIso8601String(),
+      'termsCondition': 'Terms and conditions apply.',
+      'company': 'BeOne',
+      'donationId': widget.donationId,
     });
 
     _stopLocationSharing(); // Ensure the timer is stopped here

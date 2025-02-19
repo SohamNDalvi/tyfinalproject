@@ -3,17 +3,21 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:geolocator/geolocator.dart';
+import 'organic_store.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'donation_form.dart';
 import 'beone_donors.dart';
+import 'package:final_project/BeOne_Verification_Page.dart';
 import 'account_screen.dart';
 import 'my_donations.dart';
 import 'user_login_page.dart'; // Import your UserLoginPage
 import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
 import 'Card_to_All_donation.dart'; // Import the DonationCardToAll page
-import 'Notification_Page.dart';
+import 'MyRewardsPage.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'courses.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -31,7 +35,35 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _fetchLocation();
     _fetchCompletedDonations(); // Fetch completed donations on init
+    updateUserFCMToken();
   }
+
+
+  Future<void> updateUserFCMToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('uid');
+    String? fcmToken = prefs.getString('fcm_token');
+
+    // Check if userId and fcmToken are valid
+    if (userId == null || userId.isEmpty) {
+      print('❌ No userId found in SharedPreferences');
+      return; // Exit if userId is not valid
+    }
+
+    if (fcmToken == null || fcmToken.isEmpty) {
+      print('❌ No FCM token found in SharedPreferences');
+      return; // Exit if fcmToken is not valid
+    }
+
+    // If both userId and fcmToken are valid, update Firestore
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      'userFcmToken': fcmToken,
+    }, SetOptions(merge: true)); // Use merge to create or update the field
+
+    print('✅ FCM token updated successfully for user: $userId');
+  }
+
+
 
   Future<void> _refreshData() async {
     await _fetchLocation(); // Refresh location
@@ -245,8 +277,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             IconButton(
                               onPressed: () {
-                                print("Notification icon tapped");
-                                _checkLoginAndNavigate(NotificationPage());
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => StorePage()),
+                                );
                               },
                               icon: Icon(
                                 Icons.notifications_outlined,
@@ -473,7 +507,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(left: 16, right: 16, top: 14, bottom: 18),
                 child: ElevatedButton(
                   onPressed: () {
-                    _checkLoginAndNavigate(UserLoginPage()); // Check login before navigating
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => BeOneVerificationForm()),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     padding: EdgeInsets.zero, // Remove padding to make the image occupy full space
