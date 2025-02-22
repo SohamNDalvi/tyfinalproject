@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'home_screen.dart';
 
 class BeOneVerificationForm extends StatefulWidget {
   @override
@@ -12,7 +13,6 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   final TextEditingController _businessNameController = TextEditingController();
-  final TextEditingController _businessTypeController = TextEditingController();
   final TextEditingController _businessAddressController = TextEditingController();
   final TextEditingController _contactNumberController = TextEditingController();
   final TextEditingController _ownerNameController = TextEditingController();
@@ -22,8 +22,6 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
   final TextEditingController _previousCertificationsController = TextEditingController();
   final TextEditingController _numberOfEmployeesController = TextEditingController();
   final TextEditingController _averageDailyCustomersController = TextEditingController();
-  final TextEditingController _wasteManagementPracticesController = TextEditingController();
-  final TextEditingController _cleaningPracticesController = TextEditingController();
   final TextEditingController _preferredDateController = TextEditingController();
   final TextEditingController _preferredTimeController = TextEditingController();
   final TextEditingController _commentsController = TextEditingController();
@@ -63,7 +61,15 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
       return;
     }
 
-    // Reference to user's document in the Donations collection
+    // Check if all required fields are filled
+    if (!_areRequiredFieldsFilled()) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Please fill in all required fields.'),
+      ));
+      return;
+    }
+
+    // Reference to user's document in the B1Verifications collection
     DocumentReference userDoc = FirebaseFirestore.instance.collection('B1Verifications').doc(userId);
 
     // Fetch all verification documents for the user from the subcollection
@@ -94,16 +100,16 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
         barrierDismissible: false,
         builder: (context) {
           return AlertDialog(
-              title: Text("Verification In Progress"),
-              content: Text("You are not eligible for a second verification. Please wait for the current verification to complete."),
-              actions: [
+            title: Text("Verification In Progress"),
+            content: Text("You are not eligible for a second verification. Please wait for the current verification to complete."),
+            actions: [
               TextButton(
-              onPressed: () {
-            Navigator.of(context).pop(); // Close the dialog
-          },
-          child: Text("OK"),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: Text("OK"),
               ),
-          ],
+            ],
           );
         },
       );
@@ -124,8 +130,6 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
       'previousCertifications': _previousCertificationsController.text,
       'numberOfEmployees': int.tryParse(_numberOfEmployeesController.text) ?? 0,
       'averageDailyCustomers': int.tryParse(_averageDailyCustomersController.text) ?? 0,
-      'wasteManagementPractices': _wasteManagementPracticesController.text,
-      'cleaningPractices': _cleaningPracticesController.text,
       'preferredDate': _preferredDateController.text,
       'preferredTime': _preferredTimeController.text,
       'comments': _commentsController.text,
@@ -146,13 +150,36 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Verification request submitted successfully!'),
       ));
+
       // Clear form fields
       _clearFormFields();
+
+      // Navigate to HomeScreen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()), // Replace with your HomeScreen widget
+      );
     } catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Failed to submit verification request. Please try again.'),
       ));
     }
+  }
+
+  bool _areRequiredFieldsFilled() {
+    // Check if all required fields are filled
+    return _businessNameController.text.isNotEmpty &&
+        _selectedBusinessType != 'Select' &&
+        _businessAddressController.text.isNotEmpty &&
+        _contactNumberController.text.isNotEmpty &&
+        _ownerNameController.text.isNotEmpty &&
+        _ownerContactNumberController.text.isNotEmpty &&
+        _ownerEmailController.text.isNotEmpty &&
+        _reasonController.text.isNotEmpty &&
+        _numberOfEmployeesController.text.isNotEmpty &&
+        _averageDailyCustomersController.text.isNotEmpty &&
+        _preferredDateController.text.isNotEmpty &&
+        _preferredTimeController.text.isNotEmpty;
   }
 
   void _clearFormFields() {
@@ -166,8 +193,6 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
     _previousCertificationsController.clear();
     _numberOfEmployeesController.clear();
     _averageDailyCustomersController.clear();
-    _wasteManagementPracticesController.clear();
-    _cleaningPracticesController.clear();
     _preferredDateController.clear();
     _preferredTimeController.clear();
     _commentsController.clear();
@@ -214,6 +239,36 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
         SizedBox(height: 20.0),
       ],
     );
+  }
+
+  String? _validateEmail(String? value) {
+    // Regular expression for validating email
+    String pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+    RegExp regex = RegExp(pattern);
+    if (value == null || value.isEmpty) {
+      return "Email is required.";
+    } else if (!regex.hasMatch(value)) {
+      return "Enter a valid email address.";
+    }
+    return null;
+  }
+
+  String? _validateContactNumber(String? value) {
+    if (value == null || value.isEmpty) {
+      return "Contact number is required.";
+    } else if (value.length != 10 || !RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return "Contact number must be 10 digits.";
+    }
+    return null;
+  }
+
+  String? _validateNumeric(String? value) {
+    if (value == null || value.isEmpty) {
+      return "This field is required.";
+    } else if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
+      return "Please enter a valid number.";
+    }
+    return null;
   }
 
   @override
@@ -268,7 +323,7 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
                 if (_selectedBusinessType == 'Other') // Show text field for other business type
                   buildFieldWithExample(
                     label: "Please specify",
-                    controller: _businessTypeController,
+                    controller: _businessAddressController,
                     example: "Example: Food Truck",
                     validator: (value) => value!.isEmpty ? "Please specify the business type." : null,
                   ),
@@ -282,8 +337,8 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
                 buildFieldWithExample(
                   label: "Contact Number",
                   controller: _contactNumberController,
-                  example: "Example: +1 234 567 890",
-                  validator: (value) => value!.isEmpty ? "Contact number is required." : null,
+                  example: "Example: 1234567890",
+                  validator: _validateContactNumber,
                 ),
                 SizedBox(height: 20.0),
                 // Owner/Manager Information
@@ -298,14 +353,14 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
                 buildFieldWithExample(
                   label: "Owner/Manager Contact Number",
                   controller: _ownerContactNumberController,
-                  example: "Example: +1 234 567 890",
-                  validator: (value) => value!.isEmpty ? "Owner/Manager contact number is required." : null,
+                  example: "Example: 1234567890",
+                  validator: _validateContactNumber,
                 ),
                 buildFieldWithExample(
                   label: "Owner/Manager Email",
                   controller: _ownerEmailController,
                   example: "Example: johndoe@example.com",
-                  validator: (value) => value!.isEmpty ? "Owner/Manager email is required." : null,
+                  validator: _validateEmail,
                 ),
                 SizedBox(height: 20.0),
                 // Verification Details
@@ -330,23 +385,13 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
                   label: "Number of Employees",
                   controller: _numberOfEmployeesController,
                   example: "Example: 10",
-                  validator: (value) => value!.isEmpty ? "Number of employees is required." : null,
+                  validator: _validateNumeric,
                 ),
                 buildFieldWithExample(
                   label: "Average Daily Customers",
                   controller: _averageDailyCustomersController,
                   example: "Example: 50",
-                  validator: (value) => value!.isEmpty ? "Average daily customers is required." : null,
-                ),
-                buildFieldWithExample(
-                  label: "Waste Management Practices",
-                  controller: _wasteManagementPracticesController,
-                  example: "Example: Composting, Donation",
-                ),
-                buildFieldWithExample(
-                  label: "Cleaning Practices",
-                  controller: _cleaningPracticesController,
-                  example: "Example: Daily cleaning, Sanitization",
+                  validator: _validateNumeric,
                 ),
                 SizedBox(height: 20.0),
                 // Schedule Preferences
@@ -380,10 +425,9 @@ class _BeOneVerificationFormState extends State<BeOneVerificationForm> {
                     }
                   },
                 ),
-
                 SizedBox(height: 20.0),
                 // Additional Information
-                Text("Additional Information", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text("Additional Information (Optional)", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 SizedBox(height: 15.0),
                 buildFieldWithExample(
                   label: "Comments or Questions",
